@@ -33,7 +33,7 @@ Die Texte stammen aus den beiden Docs des Projekts. Neu einlesen: beide Docs als
 ## Aufbau
 
 - `texte/`: die 24 Türchen
-- `einstellungen.json`: Adressen, Vorschau-Code, GoatCounter-Name
+- `einstellungen.json`: Adressen, Vorschau-Code, GoatCounter-Name (Statistik unter https://kiundkekse.goatcounter.com; das Zählskript liegt selbst gehostet in `statisch/goatcounter-count-v5.js`)
 - `statisch/`: Stil, Skript, Schriften (selbst gehostet, kein Abruf bei Google), Vorschaubilder
 - `werkzeuge/`: Mini-Tools, die in Türchen eingebettet sind (Bilderset 4, Timer 5, Übungs-App 12, Baukasten 19, Quizturnier 21); sie laden nichts aus dem Internet und speichern keine Namen. Das Bilderset liegt in `werkzeuge/echt-oder-ki/bilder/` unter neutralen Namen (bild-01 bis bild-12), damit kein Dateiname die Lösung verrät; welches Bild echt ist, samt Urheber:in, Lizenz und Commons-Datei, steht in der Liste `BILDER` in `werkzeuge/echt-oder-ki/index.html`
 - `grafiken/`: Grafiken für Türchen (Rollen in Türchen 6); neu erzeugen mit `node skripte/grafiken.mjs`
