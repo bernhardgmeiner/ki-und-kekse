@@ -1,0 +1,7 @@
+{
+  "name": "ki-und-kekse",
+  "private": true,
+  "type": "module",
+  "scripts": { "bauen": "node bauen.mjs" },
+  "dependencies": { "marked": "^18.0.0" }
+}

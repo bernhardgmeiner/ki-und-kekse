@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gruppen-Zufall und Timer – KI &amp; Kekse</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<style>
+@font-face{font-family:"Figtree";src:url("../../statisch/schrift/figtree.woff2") format("woff2");font-weight:300 900;font-display:swap}
+@font-face{font-family:"Pixelify Sans";src:url("../../statisch/schrift/pixelify.woff2") format("woff2");font-weight:400 700;font-display:swap}
+:root{--gruen:#1f5a3d;--dunkel:#16432e;--creme:#f6efe3;--papier:#fffaf2;--text:#1f2e25;--rot:#c0303a;--orange:#e07b1a;--gelb:#f2c14e;--pixel:"Pixelify Sans","Figtree",system-ui,sans-serif}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;display:flex;flex-direction:column;font-family:"Figtree",system-ui,sans-serif;font-size:17px;line-height:1.4;color:var(--text);background:var(--creme)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gelb);outline-offset:2px}
+.reiter{display:flex;gap:6px;padding:10px 10px 0;background:var(--gruen)}
+.reiter button{flex:1;min-height:48px;border:0;border-radius:0;background:var(--dunkel);color:var(--creme);font-family:var(--pixel);font-weight:600;font-size:19px}
+.reiter button[aria-selected="true"]{background:var(--creme);color:var(--gruen)}
+.reiter .voll{flex:none;width:48px;padding:0;display:flex;align-items:center;justify-content:center}
+main{flex:1;min-height:0;overflow:auto}
+section{padding:16px;max-width:1400px;margin:0 auto}
+section[hidden]{display:none}
+label{display:block;font-weight:600;font-size:15px;margin-bottom:4px}
+textarea,input[type=text],input[type=number],select{width:100%;padding:10px 12px;border:2px solid var(--gruen);border-radius:0;background:var(--papier)}
+textarea{min-height:150px;resize:vertical}
+.zeile{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:12px}
+.zeile > div{flex:1;min-width:120px}
+.haupt{min-height:52px;padding:0 20px;border:0;border-radius:0;background:var(--gruen);color:var(--creme);font-family:var(--pixel);font-weight:600;font-size:19px;box-shadow:0 4px 0 var(--dunkel)}
+.haupt:active{transform:translateY(2px);box-shadow:0 2px 0 var(--dunkel)}
+.neben{min-height:44px;padding:0 14px;border:2px solid var(--text);border-radius:0;background:transparent;font-weight:600;font-size:15px}
+.klein{margin:6px 0 0;font-size:14px;color:#5f5348}
+.eingabe.zu{display:none}
+.karten{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px;margin-top:16px}
+.karte{background:var(--papier);border:3px solid var(--gruen);padding:12px 16px 16px}
+.karte h2{margin:0 0 6px;font-family:var(--pixel);font-weight:600;font-size:clamp(18px,2vw,26px);color:var(--rot)}
+.karte ul{margin:0;padding:0;list-style:none;font-size:clamp(22px,2.6vw,40px);font-weight:600;line-height:1.25}
+.leiste{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+/* Timer */
+#timer.laeuft{position:relative}
+.buehne{display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2vh;min-height:calc(100vh - 150px);padding:16px;background:var(--gruen);color:var(--creme);transition:background-color .6s}
+.buehne.an{display:flex}
+.buehne.letzte{background:var(--orange);color:var(--text)}
+.buehne.aus{background:var(--rot);color:var(--creme)}
+.auftrag{margin:0;font-size:clamp(24px,5vw,72px);font-weight:700;line-height:1.15;max-width:22em;overflow-wrap:anywhere}
+.uhr{font-family:var(--pixel);font-weight:600;font-size:clamp(84px,24vw,360px);line-height:1;font-variant-numeric:tabular-nums}
+.buehne .leiste{justify-content:center;margin-top:0}
+.buehne .neben{border-color:currentColor;color:inherit}
+</style>
+</head>
+<body>
+<div class="reiter" role="tablist">
+<button type="button" role="tab" id="r-gruppen" aria-controls="gruppen" aria-selected="true">Gruppen</button>
+<button type="button" role="tab" id="r-timer" aria-controls="timer" aria-selected="false">Timer</button>
+<button type="button" class="voll" id="voll" aria-label="Vollbild ein oder aus"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
+</div>
+<main>
+<section id="gruppen" role="tabpanel" aria-labelledby="r-gruppen">
+<div class="eingabe" id="g-eingabe">
+<label for="namen">Namen, einer pro Zeile</label>
+<textarea id="namen" spellcheck="false" autocomplete="off"></textarea>
+<p class="klein" id="anzahl">0 Namen</p>
+<div class="zeile">
+<div><label for="groesse">Gruppengröße</label>
+<select id="groesse"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select></div>
+<button type="button" class="haupt" id="losen">Gruppen auslosen</button>
+</div>
+<p class="klein">Die Namen bleiben in diesem Browser-Fenster. Nichts wird gespeichert oder verschickt.</p>
+<div class="leiste"><button type="button" class="neben" id="beispiel">Beispielnamen einfügen</button></div>
+</div>
+<div id="ergebnis" hidden>
+<div class="karten" id="karten" aria-live="polite"></div>
+<div class="leiste">
+<button type="button" class="haupt" id="nochmal">Neu mischen</button>
+<button type="button" class="neben" id="aendern">Namen ändern</button>
+</div>
+</div>
+</section>
+<section id="timer" role="tabpanel" aria-labelledby="r-timer" hidden>
+<div class="eingabe" id="t-eingabe">
+<label for="auftrag">Arbeitsauftrag</label>
+<input type="text" id="auftrag" autocomplete="off">
+<div class="zeile">
+<div><label for="minuten">Minuten</label>
+<input type="number" id="minuten" min="1" max="180" value="10" inputmode="numeric"></div>
+<button type="button" class="haupt" id="start">Timer starten</button>
+</div>
+<p class="klein">In der letzten Minute wird die Anzeige orange, am Ende ertönt ein Gong.</p>
+</div>
+<div class="buehne" id="buehne">
+<p class="auftrag" id="auftrag-gross"></p>
+<div class="uhr" id="uhr" role="timer" aria-live="off">10:00</div>
+<div class="leiste">
+<button type="button" class="neben" id="pause">Pause</button>
+<button type="button" class="neben" id="stopp">Beenden</button>
+</div>
+</div>
+</section>
+</main>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+
+  // Reiter
+  var reiter = { gruppen: $('r-gruppen'), timer: $('r-timer') };
+  function zeig(name) {
+    Object.keys(reiter).forEach(function (k) {
+      reiter[k].setAttribute('aria-selected', k === name ? 'true' : 'false');
+      $(k).hidden = k !== name;
+    });
+  }
+  reiter.gruppen.onclick = function () { zeig('gruppen'); };
+  reiter.timer.onclick = function () { zeig('timer'); };
+  $('voll').onclick = function () {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    } catch (e) {}
+  };
+
+  // ---------- Gruppen ----------
+  function namen() {
+    return $('namen').value.split('\n').map(function (n) { return n.trim(); }).filter(Boolean);
+  }
+  function zaehle() { var n = namen().length; $('anzahl').textContent = n + (n === 1 ? ' Name' : ' Namen'); }
+  $('namen').addEventListener('input', zaehle);
+
+  // Zufall aus dem Browser (crypto), gleich verteilt
+  function zufall(bis) {
+    var grenze = Math.floor(4294967296 / bis) * bis, z = new Uint32Array(1);
+    do { crypto.getRandomValues(z); } while (z[0] >= grenze);
+    return z[0] % bis;
+  }
+  function mische(liste) {
+    var a = liste.slice();
+    for (var i = a.length - 1; i > 0; i--) { var j = zufall(i + 1), t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function lose() {
+    var alle = mische(namen()), g = +$('groesse').value;
+    if (alle.length < 2) { $('namen').focus(); return; }
+    var anzahl = Math.max(1, Math.floor(alle.length / g)), gruppen = [];
+    for (var i = 0; i < anzahl; i++) gruppen.push(alle.slice(i * g, i * g + g));
+    // Wer übrig bleibt, kommt der Reihe nach in eine bestehende Gruppe
+    alle.slice(anzahl * g).forEach(function (n, i) { gruppen[i % anzahl].push(n); });
+    var karten = $('karten'); karten.textContent = '';
+    gruppen.forEach(function (gr, i) {
+      var k = document.createElement('div'); k.className = 'karte';
+      var h = document.createElement('h2'); h.textContent = 'Gruppe ' + (i + 1); k.appendChild(h);
+      var ul = document.createElement('ul');
+      gr.forEach(function (n) { var li = document.createElement('li'); li.textContent = n; ul.appendChild(li); });
+      k.appendChild(ul); karten.appendChild(k);
+    });
+    $('g-eingabe').classList.add('zu'); $('ergebnis').hidden = false;
+  }
+  $('losen').onclick = lose;
+  $('nochmal').onclick = lose;
+  $('aendern').onclick = function () { $('g-eingabe').classList.remove('zu'); $('ergebnis').hidden = true; };
+  $('beispiel').onclick = function () {
+    $('namen').value = ['Amira', 'Ben', 'Clara', 'Deniz', 'Elif', 'Felix', 'Greta', 'Hannah', 'Ivan', 'Jana', 'Karim', 'Lea', 'Milan', 'Nora', 'Oskar', 'Paula', 'Rafael', 'Sofia', 'Tarek', 'Valentina', 'Yusuf', 'Zoe'].join('\n');
+    zaehle();
+  };
+
+  // ---------- Timer ----------
+  var ende = 0, rest = 0, takt = null, ton = null;
+  function zwei(n) { return (n < 10 ? '0' : '') + n; }
+  function mal() {
+    var s = Math.max(0, Math.ceil((takt ? ende - Date.now() : rest) / 1000));
+    $('uhr').textContent = zwei(Math.floor(s / 60)) + ':' + zwei(s % 60);
+    $('buehne').classList.toggle('letzte', s > 0 && s <= 60);
+    if (s === 0 && takt) { halt(); $('buehne').classList.add('aus'); $('pause').hidden = true; gong(); }
+  }
+  function lauf() { ende = Date.now() + rest; takt = setInterval(mal, 200); mal(); }
+  function halt() { if (takt) { clearInterval(takt); takt = null; rest = Math.max(0, ende - Date.now()); } }
+  function gong() {
+    try {
+      var t = ton.currentTime;
+      [[196, .5], [392, .3], [587, .16], [784, .08]].forEach(function (p) {
+        var o = ton.createOscillator(), g = ton.createGain();
+        o.type = 'sine'; o.frequency.value = p[0];
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(p[1], t + .02);
+        g.gain.exponentialRampToValueAtTime(.0001, t + 3.2);
+        o.connect(g); g.connect(ton.destination); o.start(t); o.stop(t + 3.3);
+      });
+    } catch (e) {}
+  }
+  $('start').onclick = function () {
+    var m = Math.min(180, Math.max(1, parseInt($('minuten').value, 10) || 10));
+    // Der Ton braucht einen Klick, damit der Browser ihn später abspielen darf
+    try { ton = ton || new (window.AudioContext || window.webkitAudioContext)(); ton.resume(); } catch (e) {}
+    $('auftrag-gross').textContent = $('auftrag').value.trim();
+    rest = m * 60000;
+    $('t-eingabe').classList.add('zu'); $('buehne').className = 'buehne an';
+    $('pause').hidden = false; $('pause').textContent = 'Pause';
+    lauf();
+  };
+  $('pause').onclick = function () {
+    if (takt) { halt(); this.textContent = 'Weiter'; } else { lauf(); this.textContent = 'Pause'; }
+  };
+  $('stopp').onclick = function () {
+    halt(); $('buehne').className = 'buehne'; $('t-eingabe').classList.remove('zu');
+  };
+})();
+</script>
+</body>
+</html>

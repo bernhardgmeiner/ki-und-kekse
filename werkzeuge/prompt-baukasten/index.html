@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prompt-Baukasten für Lernspiele – KI &amp; Kekse</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../gemeinsam.css">
+<style>
+body{background:var(--papier)}
+.huelle{padding:14px}
+fieldset{margin:0;padding:0;border:0}
+legend{padding:0;margin-bottom:6px;font-weight:600;font-size:15px}
+.wahl{display:flex;flex-wrap:wrap;gap:8px}
+.wahl label{display:flex;align-items:center;gap:8px;min-height:44px;margin:0;padding:0 12px;border:2px solid var(--gruen);background:var(--creme);font-weight:600;font-size:15px;cursor:pointer}
+.wahl input{accent-color:var(--gruen);width:18px;height:18px;margin:0}
+.wahl label:has(input:checked){background:var(--gruen);color:var(--creme)}
+.abschnitt + .abschnitt{margin-top:16px}
+.ausgabe{margin-top:18px;border:3px dashed var(--rot);background:#fff;padding:14px}
+.ausgabe h2{color:var(--rot)}
+.ausgabe pre{margin:10px 0 12px;white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:15px;line-height:1.55}
+#inhalt{min-height:150px}
+</style>
+</head>
+<body>
+<main class="huelle">
+<div class="abschnitt">
+<p style="margin:0 0 6px;font-weight:600;font-size:15px">Beispiele zum Antippen</p>
+<div class="chips" id="beispiele" role="group" aria-label="Beispiele nach Fach"></div>
+</div>
+
+<form id="form" onsubmit="return false" style="margin-top:16px">
+<div class="abschnitt raster">
+<div><label for="fach">Fach</label><input type="text" id="fach" autocomplete="off"></div>
+<div><label for="stufe">Schulstufe oder Lernjahr</label><input type="text" id="stufe" autocomplete="off"></div>
+<div style="grid-column:1/-1"><label for="thema">Thema</label><input type="text" id="thema" autocomplete="off"></div>
+</div>
+
+<div class="abschnitt">
+<label for="form-wahl">Spielform</label>
+<select id="form-wahl">
+<option value="quiz">Quiz mit vier Antworten</option>
+<option value="wahr">Stimmt oder stimmt nicht</option>
+<option value="zuordnen">Paare zuordnen</option>
+<option value="sortieren">In Kategorien sortieren</option>
+<option value="reihe">In die richtige Reihenfolge bringen</option>
+<option value="karten">Lernkarten zum Umdrehen</option>
+<option value="luecke">Lückentext</option>
+<option value="memory">Memory</option>
+<option value="rechnen">Rechentrainer mit Rechenweg</option>
+</select>
+</div>
+
+<fieldset class="abschnitt"><legend>Gespielt wird</legend>
+<div class="wahl"><label><input type="radio" name="ort" value="am Handy" checked>am Handy</label><label><input type="radio" name="ort" value="am Beamer">am Beamer</label></div>
+</fieldset>
+
+<div class="abschnitt raster">
+<div><label for="minuten">Eine Runde dauert (Minuten)</label><input type="number" id="minuten" min="1" max="45" value="5" inputmode="numeric"></div>
+<div><label for="anzahl">Anzahl Aufgaben</label><input type="number" id="anzahl" min="1" max="100" value="10" inputmode="numeric"></div>
+<div><label for="sprache">Sprache der App</label><input type="text" id="sprache" value="Deutsch" autocomplete="off"></div>
+</div>
+
+<fieldset class="abschnitt"><legend>Rückmeldung</legend>
+<div class="wahl"><label><input type="radio" name="rueck" value="sofort nach jeder Aufgabe" checked>sofort nach jeder Aufgabe</label><label><input type="radio" name="rueck" value="am Ende">am Ende</label></div>
+</fieldset>
+
+<div class="abschnitt">
+<label for="inhalt" id="inhalt-label">Deine Inhalte (Fragen, Begriffe, Vokabeln)</label>
+<textarea id="inhalt" spellcheck="false"></textarea>
+<p class="klein" id="inhalt-hinweis" style="margin:6px 0 0">Ein Eintrag pro Zeile. Bleibt das Feld leer, lässt der Prompt die KI zuerst Aufgaben vorschlagen, die du prüfst.</p>
+</div>
+
+<div class="abschnitt">
+<label class="check"><input type="checkbox" id="schwer"><span>Steigende Schwierigkeit: Die leichten Aufgaben stehen in meiner Liste oben.</span></label>
+<label class="check" style="margin-top:10px"><input type="checkbox" id="rueckfragen" checked><span>Die KI stellt zuerst bis zu drei Rückfragen, falls etwas unklar ist.</span></label>
+</div>
+</form>
+
+<section class="ausgabe" aria-live="polite">
+<h2>Dein Prompt</h2>
+<pre id="prompt"></pre>
+<div class="reihe"><button type="button" class="knopf" id="kopieren">Prompt kopieren</button></div>
+</section>
+<p class="klein">Nichts wird gespeichert oder verschickt. Der Prompt entsteht hier im Browser.</p>
+</main>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  // Spielformen; die Ablauf-Sätze stammen aus dem Baukasten der GRG-23-Seite, ohne Angabe zur Rückmeldung
+  var FORMEN = {
+    quiz: { name: 'Quiz mit vier Antworten', ablauf: 'Es erscheint immer genau eine Frage mit vier Antwortmöglichkeiten. Nach jeder Rückmeldung kommt eine Erklärung in einem Satz.' },
+    wahr: { name: 'Stimmt oder stimmt nicht', ablauf: 'Es erscheint immer genau eine Aussage, darunter zwei große Knöpfe: „Stimmt“ und „Stimmt nicht“. Zur Rückmeldung gehört eine Erklärung in einem Satz.' },
+    zuordnen: { name: 'Paare zuordnen', ablauf: 'Links stehen Begriffe, rechts die passenden Gegenstücke in gemischter Reihenfolge. Man tippt erst links, dann rechts, um ein Paar zu bilden.' },
+    sortieren: { name: 'In Kategorien sortieren', ablauf: 'Oben stehen die Kategorien als große Felder. Darunter erscheint immer ein Begriff; man tippt die Kategorie an, in die er gehört. Bei einem Fehler nennt die Rückmeldung die richtige Kategorie.' },
+    reihe: { name: 'In die richtige Reihenfolge bringen', ablauf: 'Die Einträge erscheinen gemischt als Karten untereinander. Mit Pfeilen nach oben und unten bringt man sie in die richtige Reihenfolge. „Prüfen“ markiert richtige Positionen grün und falsche rot.' },
+    karten: { name: 'Lernkarten zum Umdrehen', ablauf: 'Jede Karte zeigt vorne die Frage und dreht sich beim Antippen um. Danach wählt man „Gewusst“ oder „Noch einmal“; Karten mit „Noch einmal“ kommen am Ende wieder.' },
+    luecke: { name: 'Lückentext', ablauf: 'Pro Aufgabe ein Satz mit einer Lücke und einem Eingabefeld. Groß- und Kleinschreibung zählt nicht. Die Rückmeldung zeigt die richtige Lösung.' },
+    memory: { name: 'Memory', ablauf: 'Verdeckte Karten, immer zwei aufdecken. Ein Paar besteht aus Begriff und passendem Gegenstück. Gefundene Paare bleiben offen, die Zahl der Züge wird gezählt.' },
+    rechnen: { name: 'Rechentrainer mit Rechenweg', ablauf: 'Pro Aufgabe gibt es ein Eingabefeld und den Knopf „Prüfen“. Bei einem Fehler zeigt der Knopf „Rechenweg“ die Lösung Schritt für Schritt.', erzeugt: true }
+  };
+  // Beispiele nach der GRG-23-Seite; Französisch wie im Türchen
+  var BEISPIELE = [
+    { n: 'Französisch', fach: 'Französisch', stufe: '1. Lernjahr', thema: 'En ville', form: 'zuordnen', ort: 'am Handy', minuten: 2, anzahl: 8, rueck: 'sofort nach jeder Aufgabe', sprache: 'Deutsch',
+      inhalt: 'la gare – der Bahnhof\nla poste – die Post\nle marché – der Markt\nla pharmacie – die Apotheke\nle musée – das Museum\nla mairie – das Rathaus\nl\'école – die Schule\nle pont – die Brücke' },
+    { n: 'Englisch', fach: 'Englisch', stufe: '6. Schulstufe', thema: 'Irregular verbs – Past Simple', form: 'quiz', sprache: 'Englisch' },
+    { n: 'Deutsch', fach: 'Deutsch', stufe: '5. Schulstufe', thema: 'Wortarten: Nomen, Verb, Adjektiv', form: 'sortieren' },
+    { n: 'Mathematik', fach: 'Mathematik', stufe: '6. Schulstufe', thema: 'Brüche kürzen und erweitern', form: 'rechnen' },
+    { n: 'Geographie', fach: 'Geographie und wirtschaftliche Bildung', stufe: 'Unterstufe', thema: 'Hauptstädte Europas', form: 'zuordnen' },
+    { n: 'Geschichte', fach: 'Geschichte', stufe: 'Unterstufe', thema: 'Ereignisse der Stunde in die richtige Reihenfolge bringen', form: 'reihe' },
+    { n: 'Biologie', fach: 'Biologie', stufe: 'Unterstufe', thema: 'Organe und ihre Aufgaben', form: 'zuordnen' }
+  ];
+  function wert(id, ersatz) { var v = $(id).value.trim(); return v || ersatz; }
+  function radio(name) { return document.querySelector('input[name="' + name + '"]:checked').value; }
+  function baue() {
+    var f = FORMEN[$('form-wahl').value], inhalt = $('inhalt').value.trim(), schwer = $('schwer').checked;
+    var anzahl = wert('anzahl', '10'), p = [];
+    p.push('Bau ein Lernspiel als eine einzige HTML-Datei mit integriertem CSS und JavaScript.');
+    p.push('');
+    p.push('Rahmen: ' + wert('fach', '[Fach]') + ', ' + wert('stufe', '[Schulstufe]') + ', Thema ' + wert('thema', '[Thema]') + '. Gespielt wird ' + radio('ort') + ', eine Runde dauert etwa ' + wert('minuten', '5') + ' Minuten; reichen die Inhalte dafür nicht, gibt es mehrere Durchgänge mit denselben Inhalten. Sprache der App: ' + wert('sprache', 'Deutsch') + '.');
+    p.push('Spielform: ' + f.name + '. ' + f.ablauf);
+    p.push('Ablauf: ' + anzahl + ' Aufgaben ' + (schwer ? 'in der Reihenfolge meiner Liste; die leichten Aufgaben stehen oben, die Schwierigkeit steigt' : 'in zufälliger Reihenfolge') + '. Rückmeldung ' + radio('rueck') + '. Am Schluss eine Übersicht: richtig beim ersten Versuch, richtig beim zweiten, noch offen.');
+    if (f.erzeugt) {
+      p.push('Inhalte: Das Spiel erzeugt die Aufgaben selbst nach Zufall' + (inhalt ? ', nach diesen Vorgaben:\n' + inhalt : '.') + ' Zeig mir zuerst fünf Beispielaufgaben mit Rechenweg, bevor du baust. Ich prüfe sie.');
+    } else if (inhalt) {
+      p.push('Inhalte: Verwende ausschließlich diese Inhalte und erfinde keine dazu:\n' + inhalt);
+    } else {
+      p.push('Inhalte: Schlag mir ' + anzahl + ' Aufgaben vor, die zu Schulstufe und Thema passen, und zeig sie mir als Liste, bevor du baust. Ich prüfe sie zuerst.');
+    }
+    p.push('Regeln: keine Namen abfragen, nichts speichern oder verschicken, große Schrift, mit Tastatur und Touch bedienbar.');
+    p.push('');
+    p.push($('rueckfragen').checked ? 'Stell mir zuerst bis zu drei Rückfragen, falls etwas unklar ist. Bau dann einen Prototyp.' : 'Bau dann einen Prototyp.');
+    $('prompt').textContent = p.join('\n');
+    var rechnen = !!f.erzeugt;
+    $('inhalt-label').textContent = rechnen ? 'Vorgaben für die Aufgaben (Zahlenbereich, Aufgabentypen)' : 'Deine Inhalte (Fragen, Begriffe, Vokabeln)';
+    $('inhalt-hinweis').textContent = rechnen ? 'Der Rechentrainer erzeugt die Aufgaben selbst; hier beschreibst du, welche.' : 'Ein Eintrag pro Zeile. Bleibt das Feld leer, lässt der Prompt die KI zuerst Aufgaben vorschlagen, die du prüfst.';
+  }
+  function setze(name, v) { document.querySelectorAll('input[name="' + name + '"]').forEach(function (r) { r.checked = r.value === v; }); }
+  function beispiel(k) {
+    var b = BEISPIELE[k];
+    $('fach').value = b.fach; $('stufe').value = b.stufe; $('thema').value = b.thema; $('form-wahl').value = b.form;
+    $('sprache').value = b.sprache || 'Deutsch'; $('inhalt').value = b.inhalt || '';
+    $('minuten').value = b.minuten || 5; $('anzahl').value = b.anzahl || 10;
+    setze('ort', b.ort || 'am Handy'); setze('rueck', b.rueck || 'sofort nach jeder Aufgabe');
+    Array.prototype.forEach.call($('beispiele').children, function (x, j) { x.setAttribute('aria-pressed', j === k ? 'true' : 'false'); });
+    baue();
+  }
+  BEISPIELE.forEach(function (b, k) {
+    var x = document.createElement('button'); x.type = 'button'; x.textContent = b.n; x.setAttribute('aria-pressed', 'false');
+    x.onclick = function () { beispiel(k); }; $('beispiele').appendChild(x);
+  });
+  $('form').addEventListener('input', function () {
+    Array.prototype.forEach.call($('beispiele').children, function (x) { x.setAttribute('aria-pressed', 'false'); });
+    baue();
+  });
+  $('form').addEventListener('change', baue);
+  function melde(t) { var m = document.createElement('div'); m.className = 'meldung'; m.setAttribute('role', 'status'); m.textContent = t; document.body.appendChild(m); setTimeout(function () { m.remove(); }, 2200); }
+  $('kopieren').onclick = function () {
+    var text = $('prompt').textContent, knopf = this;
+    function ok() { knopf.textContent = 'Kopiert'; setTimeout(function () { knopf.textContent = 'Prompt kopieren'; }, 2000); }
+    function alt() {
+      var t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select();
+      try { document.execCommand('copy') ? ok() : melde('Bitte den Prompt markieren und kopieren.'); } catch (e) { melde('Bitte den Prompt markieren und kopieren.'); }
+      t.remove();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, alt); else alt();
+  };
+  beispiel(0);
+})();
+</script>
+</body>
+</html>

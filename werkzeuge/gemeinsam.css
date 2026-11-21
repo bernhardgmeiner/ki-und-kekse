@@ -1,0 +1,35 @@
+/* Gemeinsamer Stil der Mini-Tools von KI & Kekse. Lädt nichts aus dem Internet. */
+@font-face{font-family:"Figtree";src:url("../../statisch/schrift/figtree.woff2") format("woff2");font-weight:300 900;font-display:swap}
+@font-face{font-family:"Pixelify Sans";src:url("../../statisch/schrift/pixelify.woff2") format("woff2");font-weight:400 700;font-display:swap}
+:root{--gruen:#1f5a3d;--dunkel:#16432e;--creme:#f6efe3;--papier:#fffaf2;--text:#1f2e25;--rot:#c0303a;--gelb:#f2c14e;--teig:#dfa65f;--rand:#a8692f;--leise:#5f5348;--ok:#1d7a46;--pixel:"Pixelify Sans","Figtree",system-ui,sans-serif}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:"Figtree",system-ui,sans-serif;font-size:17px;line-height:1.45;color:var(--text);background:var(--creme)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gelb);outline-offset:2px}
+[hidden]{display:none!important}
+.huelle{max-width:1100px;margin:0 auto;padding:16px}
+h1,h2,h3{font-family:var(--pixel);font-weight:600;line-height:1.2;color:var(--gruen);margin:0}
+h1{font-size:24px}h2{font-size:20px}h3{font-size:17px}
+label{display:block;font-weight:600;font-size:15px;margin-bottom:4px}
+.feld + .feld{margin-top:12px}
+input[type=text],input[type=number],select,textarea{width:100%;min-height:44px;padding:9px 12px;border:2px solid var(--gruen);border-radius:0;background:var(--papier)}
+textarea{min-height:130px;resize:vertical;line-height:1.4}
+.raster{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))}
+.knopf{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border:0;border-radius:0;background:var(--gruen);color:var(--creme);font-family:var(--pixel);font-weight:600;font-size:18px;box-shadow:0 4px 0 var(--dunkel)}
+.knopf:active{transform:translateY(2px);box-shadow:0 2px 0 var(--dunkel)}
+.knopf.rot{background:var(--rot);box-shadow:0 4px 0 #8e1f28}
+.knopf.gelb{background:var(--gelb);color:var(--text);box-shadow:0 4px 0 #b98d2c}
+.knopf:disabled{opacity:.45;cursor:default;transform:none}
+.neben{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;border:2px solid var(--text);border-radius:0;background:transparent;font-weight:600;font-size:15px}
+.reihe{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.klein{font-size:14px;color:var(--leise)}
+.hinweis{padding:10px 12px;border:2px dashed var(--rand);background:var(--papier);font-size:15px}
+.warnung{padding:10px 12px;border:3px solid var(--rot);background:#fff1f0;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{min-height:40px;padding:0 12px;border:2px solid var(--gruen);border-radius:0;background:var(--papier);color:var(--gruen);font-weight:600;font-size:14.5px}
+.chips button[aria-pressed="true"]{background:var(--gruen);color:var(--creme)}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:500}
+.check input{width:22px;height:22px;flex:none;margin:1px 0 0;accent-color:var(--gruen)}
+.meldung{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);max-width:calc(100vw - 32px);padding:10px 16px;background:var(--text);color:var(--papier);font-family:var(--pixel);text-align:center;z-index:50}

@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo: Übungs-App nach der Schularbeit – KI &amp; Kekse</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../gemeinsam.css">
+<style>
+body{background:var(--papier)}
+.huelle{max-width:760px;padding:14px}
+.demo{margin:0 0 14px;padding:8px 12px;background:var(--gelb);font-weight:600;font-size:14.5px}
+.balken{display:grid;grid-template-columns:minmax(0,9.5em) 1fr 5.2em;gap:8px 10px;align-items:center;margin-top:8px}
+.balken label{margin:0;font-size:15px}
+.balken input{min-height:40px;padding:6px 8px;text-align:center}
+.spur{height:18px;background:#e8dfd0;position:relative}
+.spur i{position:absolute;inset:0 auto 0 0;background:var(--gruen)}
+.spur.schwach i{background:var(--rot)}
+.vorschlag{margin-top:14px;padding:12px;border:3px solid var(--rot);background:#fff}
+.vorschlag p{margin:0 0 10px}
+.bereiche{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));margin-top:10px}
+.bereiche .neben{width:100%}
+.kopf{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.text{padding:12px 14px;border:2px dotted var(--rand);background:#fff;font-size:15.5px}
+.text p{margin:0 0 8px}
+.aufgabe{margin:14px 0 0;font-size:19px;font-weight:600}
+.optionen{display:grid;gap:8px;margin-top:12px}
+.optionen button{min-height:52px;padding:8px 14px;border:2px solid var(--gruen);border-radius:0;background:#fff;text-align:left;font-size:17px}
+.optionen button.richtig{background:#e3f3e8;border-color:var(--ok);font-weight:700}
+.optionen button.falsch{background:#fff1f0;border-color:var(--rot)}
+.optionen button:disabled{cursor:default}
+.eingabe{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.eingabe input{flex:1 1 200px}
+.rueck{margin-top:12px;padding:10px 12px;border-left:6px solid var(--gruen);background:#fff}
+.rueck.falsch{border-left-color:var(--rot)}
+.rueck p{margin:0}
+.rueck p + p{margin-top:6px}
+pre.prompt{white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:15.5px;margin:10px 0;padding:12px;background:#fff;border:3px dashed var(--rot)}
+</style>
+</head>
+<body>
+<main class="huelle">
+<p class="demo">Demo mit erfundenen Aufgaben: Englisch, 8. Schulstufe</p>
+
+<!-- Start -->
+<section id="s-start">
+<div class="feld"><label for="spitzname">Dein Spitzname</label><input type="text" id="spitzname" maxlength="24" autocomplete="off" placeholder="zum Beispiel Kekskrümel"></div>
+<h2 style="margin-top:16px">Deine Punkte bei der Schularbeit</h2>
+<div id="eingaben"></div>
+<div class="vorschlag" id="vorschlag" hidden></div>
+<p class="klein">Spitzname und Punkte bleiben nur in diesem Browser. Nichts wird verschickt.</p>
+</section>
+
+<!-- Übung -->
+<section id="s-uebung" hidden>
+<div class="kopf"><h2 id="u-titel"></h2><span class="klein" id="u-stand"></span></div>
+<div class="text" id="u-text" hidden></div>
+<p class="aufgabe" id="u-aufgabe"></p>
+<div class="optionen" id="u-optionen"></div>
+<form class="eingabe" id="u-eingabe" hidden onsubmit="return false"><input type="text" id="u-feld" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Deine Antwort"><button type="submit" class="knopf">Prüfen</button></form>
+<div class="rueck" id="u-rueck" hidden></div>
+<div class="reihe" style="margin-top:14px"><button type="button" class="knopf" id="u-weiter" hidden>Weiter</button><button type="button" class="neben" id="u-abbruch">Zur Übersicht</button></div>
+</section>
+
+<!-- Ende eines Bereichs -->
+<section id="s-ende" hidden>
+<h2 id="e-titel"></h2>
+<p id="e-ergebnis" style="font-size:18px"></p>
+<div class="reihe"><button type="button" class="knopf" id="e-weiterlernen">Weiterlernen</button><button type="button" class="neben" id="e-uebersicht">Anderen Bereich üben</button></div>
+<div id="e-prompt" hidden>
+<p>Kopier diesen Prompt in den Chatbot eurer Schule:</p>
+<pre class="prompt" id="e-text"></pre>
+<button type="button" class="knopf" id="e-kopieren">Prompt kopieren</button>
+</div>
+</section>
+</main>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var LESETEXT = [
+    'The Repair Café',
+    'On the first Saturday of every month, the community centre in our town turns into a Repair Café. People bring broken things like toasters, bikes, jeans or old radios, and volunteers help them fix them for free. The idea started in Amsterdam in 2009 and has spread to many countries.',
+    'Mia, 14, went there for the first time last month. “My headphones only worked on one side,” she says. “A volunteer called Tom showed me how to open them. A small cable was loose. We fixed it in twenty minutes.” Mia was surprised that nobody repaired the headphones for her. “I had to do it myself, with Tom’s help. Now I know how it works.”',
+    'Not everything can be saved. Tom says that about one in three things can’t be repaired, often because spare parts are missing. Visitors pay nothing, but many leave a small donation for tools and coffee.'
+  ];
+  // Bereiche der erfundenen Schularbeit; ueben = false lässt sich in der Datei nicht prüfen
+  var BEREICHE = [
+    { id: 'listening', name: 'Listening', max: 10, ueben: false, im: 'beim Hörverstehen', thema: 'wie ich mich auf Hörtexte vorbereite' },
+    { id: 'reading', name: 'Reading', max: 10, ueben: true, im: 'beim Leseverstehen', thema: 'wie ich bei einem Lesetext mit Fragen vorgehe', text: true },
+    { id: 'passive', name: 'Passive Voice', max: 10, ueben: true, im: 'im Passiv', thema: 'die Bildung des Passivs' },
+    { id: 'if', name: 'If-Sätze', max: 10, ueben: true, im: 'bei den If-Sätzen', thema: 'den Unterschied zwischen dem ersten und dem zweiten If-Satz' },
+    { id: 'vocab', name: 'Vocabulary', max: 10, ueben: true, im: 'beim Wortschatz zum Thema Reisen und Umwelt', thema: 'wie ich mir neue Wörter zum Thema Reisen und Umwelt merke' },
+    { id: 'writing', name: 'Writing', max: 20, ueben: false, im: 'beim Schreiben', thema: 'wie ich einen Text gliedere' }
+  ];
+  // Aufgaben: o = Optionen (die erste ist richtig, die App mischt), oder t = getippte Antworten
+  var AUFGABEN = {
+    reading: [
+      { q: 'When does the Repair Café take place?', o: ['On the first Saturday of every month', 'Every Saturday', 'Once a year'], e: 'Gleich im ersten Satz steht „On the first Saturday of every month“.' },
+      { q: 'Who fixes the broken things?', o: ['The visitors, with help from volunteers', 'A company in Amsterdam', 'A shop in town'], e: 'Die Freiwilligen helfen den Besucher:innen, die Dinge selbst zu reparieren.' },
+      { q: 'Where did the idea start?', o: ['In Amsterdam', 'In Mia’s town', 'In London'], e: 'Im ersten Absatz: „The idea started in Amsterdam in 2009“.' },
+      { q: 'What was wrong with Mia’s headphones?', o: ['A small cable was loose', 'The battery was empty', 'They were too old'], e: 'Mia sagt: „A small cable was loose.“' },
+      { q: 'How long did the repair take?', o: ['Twenty minutes', 'Two hours', 'A whole day'], e: 'Im Text steht „We fixed it in twenty minutes.“' },
+      { q: 'What surprised Mia?', o: ['That she had to do the repair herself', 'That the repair was expensive', 'That Tom was very young'], e: 'Sie war überrascht, dass niemand die Kopfhörer für sie repariert hat.' },
+      { q: 'According to Tom, how many things can’t be repaired?', o: ['About one in three', 'Almost none', 'About half'], e: 'Tom sagt „about one in three things can’t be repaired“.' },
+      { q: 'Why can’t some things be repaired?', o: ['Spare parts are missing', 'The volunteers have no time', 'The visitors don’t pay'], e: 'Der Grund im Text: „often because spare parts are missing“.' },
+      { q: 'How much do visitors pay?', o: ['Nothing, but many leave a donation', 'Five euros', 'It depends on the repair'], e: '„Visitors pay nothing, but many leave a small donation.“' },
+      { q: 'Which sentence is true?', o: ['Mia now knows how to fix her headphones', 'Mia goes to the Repair Café every month', 'Tom took the headphones home'], e: 'Mia sagt am Ende: „Now I know how it works.“' }
+    ],
+    passive: [
+      { q: 'The Eiffel Tower ___ in 1889.', o: ['was built', 'built', 'is built'], e: 'Passiv in der Vergangenheit: was/were + 3. Form; der Turm hat nicht selbst gebaut.' },
+      { q: 'English ___ in many countries.', o: ['is spoken', 'speaks', 'is speaking'], e: 'Passiv in der Gegenwart: am/is/are + 3. Form.' },
+      { q: 'The letters ___ yesterday.', o: ['were sent', 'was sent', 'sent'], e: '„The letters“ ist Mehrzahl, deshalb „were“.' },
+      { q: 'A new sports hall ___ next year.', o: ['will be opened', 'will open', 'is opened'], e: 'Passiv in der Zukunft: will be + 3. Form.' },
+      { q: 'Our car ___ right now, so we are taking the bus.', o: ['is being repaired', 'is repaired', 'was repairing'], e: 'Was gerade passiert: am/is/are being + 3. Form.' },
+      { q: 'The thief ___ by the police last night.', o: ['was caught', 'was catched', 'caught'], e: '„catch“ ist unregelmäßig: catch, caught, caught.' },
+      { q: 'Rewrite in the passive: “Someone stole my bike.” → My bike ___ .', t: ['was stolen'], e: 'Vergangenheit, also was + 3. Form; steal, stole, stolen.' },
+      { q: 'Rewrite in the passive: “They clean the classrooms every day.” → The classrooms ___ every day.', t: ['are cleaned'], e: 'Gegenwart und Mehrzahl: are + 3. Form.' },
+      { q: 'These photos ___ by my grandfather in 1975.', o: ['were taken', 'were took', 'have taken'], e: 'Nach „were“ steht die 3. Form: take, took, taken.' },
+      { q: 'Has the homework ___ yet?', o: ['been checked', 'checked', 'be checked'], e: 'Present Perfect im Passiv: has/have been + 3. Form.' }
+    ],
+    if: [
+      { q: 'If it rains tomorrow, we ___ at home.', o: ['will stay', 'would stay', 'stayed'], e: 'Erster If-Satz: if + Gegenwart, Hauptsatz mit will.' },
+      { q: 'If I ___ a million euros, I would travel the world.', o: ['had', 'have', 'would have'], e: 'Zweiter If-Satz: if + Vergangenheit, Hauptsatz mit would.' },
+      { q: 'If you heat ice, it ___.', o: ['melts', 'would melt', 'melted'], e: 'Was immer gilt, steht in beiden Satzteilen in der Gegenwart.' },
+      { q: 'I ___ you if I knew the answer.', o: ['would tell', 'will tell', 'told'], e: '„if I knew“ ist der zweite If-Satz, also would + Grundform.' },
+      { q: 'If she ___ harder, she will pass the test.', o: ['studies', 'will study', 'studied'], e: 'Im if-Teil steht kein will, sondern die Gegenwart.' },
+      { q: 'What would you do if you ___ a famous person in the street?', o: ['saw', 'see', 'will see'], e: 'Zu „would“ im Hauptsatz gehört die Vergangenheit im if-Teil.' },
+      { q: 'If I were you, I ___ that jacket. It is too expensive.', o: ['wouldn’t buy', 'won’t buy', 'didn’t buy'], e: 'Mit „If I were you“ gibst du einen Rat, dazu gehört would.' },
+      { q: 'Complete: If we leave now, we ___ (catch) the bus.', t: ['will catch', '\'ll catch', 'we\'ll catch', 'we will catch'], e: 'Erster If-Satz: Hauptsatz mit will + Grundform.' },
+      { q: 'Complete: If he ___ (have) more time, he would learn the guitar.', t: ['had'], e: 'Zweiter If-Satz: im if-Teil die Vergangenheit, „had“.' },
+      { q: 'Unless you hurry, you ___ late.', o: ['will be', 'would be', 'are'], e: '„Unless“ heißt „wenn nicht“ und funktioniert hier wie der erste If-Satz.' }
+    ],
+    vocab: [
+      { q: 'A ___ lets you travel somewhere and come back.', o: ['return ticket', 'single ticket', 'boarding pass'], e: 'Mit einem „return ticket“ fährst du hin und zurück.' },
+      { q: 'The plane was ___, so we waited three hours at the airport.', o: ['delayed', 'crowded', 'booked'], e: '„delayed“ heißt verspätet.' },
+      { q: 'Plastic bottles can be ___ and turned into new products.', o: ['recycled', 'wasted', 'polluted'], e: '„recycle“ heißt wiederverwerten.' },
+      { q: '“Luggage” means ___.', o: ['bags and suitcases', 'a travel ticket', 'a hotel room'], e: '„luggage“ ist das Gepäck.' },
+      { q: 'Which word is the opposite of “cheap”?', o: ['expensive', 'free', 'poor'], e: '„cheap“ heißt billig, das Gegenteil ist „expensive“.' },
+      { q: 'We stayed at a ___, a cheap place for young travellers with shared rooms.', o: ['youth hostel', 'campsite', 'guided tour'], e: 'Eine „youth hostel“ ist eine Jugendherberge.' },
+      { q: 'Cars and factories ___ the air.', o: ['pollute', 'protect', 'prevent'], e: '„pollute“ heißt verschmutzen.' },
+      { q: 'Which word fits? The place where trains stop for passengers: st______', t: ['station', 'train station', 'railway station'], e: 'Der Bahnhof heißt „station“ oder „train station“.' },
+      { q: '“Sightseeing” means ___.', o: ['visiting famous places', 'sleeping late', 'watching the sky'], e: 'Beim „sightseeing“ besichtigst du Sehenswürdigkeiten.' },
+      { q: 'Take the train instead of the plane to reduce your ___ footprint.', o: ['carbon', 'water', 'travel'], e: 'Der „carbon footprint“ ist der CO₂-Fußabdruck.' }
+    ]
+  };
+
+  // ---------- Speichern: nur im Browser, und ohne Speicher läuft die App trotzdem ----------
+  var SCHLUESSEL = 'kk-uebungsapp-demo', daten = { spitzname: '', punkte: {} };
+  try { var alt = JSON.parse(localStorage.getItem(SCHLUESSEL) || 'null'); if (alt && typeof alt === 'object') daten = { spitzname: String(alt.spitzname || ''), punkte: alt.punkte || {} }; } catch (e) {}
+  function speichere() { try { localStorage.setItem(SCHLUESSEL, JSON.stringify(daten)); } catch (e) {} }
+
+  // ---------- Start ----------
+  var eingaben = $('eingaben');
+  BEREICHE.forEach(function (b) {
+    var z = document.createElement('div'); z.className = 'balken';
+    z.innerHTML = '<label for="p-' + b.id + '"></label><div class="spur" id="s-' + b.id + '"><i></i></div><input type="number" id="p-' + b.id + '" min="0" max="' + b.max + '" inputmode="numeric">';
+    z.querySelector('label').textContent = b.name + ' (von ' + b.max + ')';
+    eingaben.appendChild(z);
+    var feld = z.querySelector('input');
+    if (daten.punkte[b.id] !== undefined && daten.punkte[b.id] !== '') feld.value = daten.punkte[b.id];
+    feld.addEventListener('input', function () {
+      var v = feld.value === '' ? '' : Math.max(0, Math.min(b.max, parseInt(feld.value, 10) || 0));
+      if (v !== '' && String(v) !== feld.value) feld.value = v;
+      daten.punkte[b.id] = v; speichere(); start();
+    });
+  });
+  $('spitzname').value = daten.spitzname;
+  $('spitzname').addEventListener('input', function () { daten.spitzname = this.value.trim(); speichere(); start(); });
+
+  function anteil(b) { var p = daten.punkte[b.id]; return p === '' || p === undefined ? null : p / b.max; }
+  function schwaechster(nurUebbar) {
+    var best = null;
+    BEREICHE.forEach(function (b) {
+      if (nurUebbar && !b.ueben) return;
+      var a = anteil(b); if (a === null) return;
+      if (best === null || a < anteil(best)) best = b;
+    });
+    return best;
+  }
+  function start() {
+    var alleDa = BEREICHE.every(function (b) { return anteil(b) !== null; });
+    var tief = schwaechster(false), tiefUeb = schwaechster(true);
+    BEREICHE.forEach(function (b) {
+      var a = anteil(b), s = $('s-' + b.id);
+      s.firstChild.style.width = (a === null ? 0 : Math.round(a * 100)) + '%';
+      s.className = 'spur' + (alleDa && tief && b.id === tief.id ? ' schwach' : '');
+    });
+    var v = $('vorschlag'); v.textContent = '';
+    if (!alleDa) {
+      v.hidden = false;
+      var p0 = document.createElement('p'); p0.textContent = 'Trag bei jedem Bereich deine Punkte ein. Dann schlägt die App vor, womit du anfängst.'; v.appendChild(p0);
+    } else {
+      v.hidden = false;
+      var p = document.createElement('p'), gruss = daten.spitzname ? daten.spitzname + ', am' : 'Am';
+      if (tief.ueben) p.textContent = gruss + ' meisten fehlt dir bei ' + tief.name + ' (' + daten.punkte[tief.id] + ' von ' + tief.max + '). Fang dort an.';
+      else p.textContent = gruss + ' meisten fehlt dir bei ' + tief.name + ' (' + daten.punkte[tief.id] + ' von ' + tief.max + '). Das lässt sich hier nicht üben. Von den übrigen Bereichen fehlt am meisten bei ' + tiefUeb.name + ' (' + daten.punkte[tiefUeb.id] + ' von ' + tiefUeb.max + ').';
+      v.appendChild(p);
+      var los = document.createElement('button'); los.type = 'button'; los.className = 'knopf'; los.textContent = tiefUeb.name + ' üben';
+      los.onclick = function () { beginne(tiefUeb); }; v.appendChild(los);
+    }
+    var liste = document.createElement('div'); liste.className = 'bereiche';
+    BEREICHE.filter(function (b) { return b.ueben; }).forEach(function (b) {
+      var k = document.createElement('button'); k.type = 'button'; k.className = 'neben'; k.textContent = b.name;
+      k.onclick = function () { beginne(b); }; liste.appendChild(k);
+    });
+    var h = document.createElement('p'); h.className = 'klein'; h.style.margin = '14px 0 0';
+    h.textContent = 'Oder such dir einen Bereich aus. Listening und Writing lassen sich in dieser Datei nicht prüfen.';
+    v.appendChild(h); v.appendChild(liste);
+  }
+
+  // ---------- Übung ----------
+  function zufall(bis) { var g = Math.floor(4294967296 / bis) * bis, z = new Uint32Array(1); do { crypto.getRandomValues(z); } while (z[0] >= g); return z[0] % bis; }
+  function mische(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = zufall(i + 1), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  var U = null;
+  function zeige(id) { ['s-start', 's-uebung', 's-ende'].forEach(function (s) { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+  function beginne(b) {
+    U = { b: b, liste: AUFGABEN[b.id], i: 0, versuch: 0, erst: 0, zweit: 0, offen: 0 };
+    $('u-titel').textContent = b.name;
+    var t = $('u-text'); t.hidden = !b.text; t.textContent = '';
+    if (b.text) LESETEXT.forEach(function (absatz, k) { var p = document.createElement('p'); if (k === 0) { var s = document.createElement('strong'); s.textContent = absatz; p.appendChild(s); } else p.textContent = absatz; t.appendChild(p); });
+    zeige('s-uebung'); aufgabe();
+  }
+  function norm(s) { return s.toLowerCase().replace(/[’`]/g, '\'').replace(/[.!?]+$/, '').replace(/\s+/g, ' ').trim(); }
+  function aufgabe() {
+    var a = U.liste[U.i]; U.versuch = 0;
+    $('u-stand').textContent = 'Aufgabe ' + (U.i + 1) + ' von ' + U.liste.length;
+    $('u-aufgabe').textContent = a.q;
+    $('u-rueck').hidden = true; $('u-weiter').hidden = true;
+    var box = $('u-optionen'); box.textContent = '';
+    $('u-eingabe').hidden = !a.t;
+    if (a.o) {
+      mische(a.o.map(function (t, k) { return { t: t, ok: k === 0 }; })).forEach(function (o) {
+        var k = document.createElement('button'); k.type = 'button'; k.textContent = o.t;
+        k.onclick = function () { antworte(o.ok, k); }; box.appendChild(k);
+      });
+    } else { $('u-feld').value = ''; $('u-feld').disabled = false; setTimeout(function () { $('u-feld').focus(); }, 0); }
+  }
+  function antworte(ok, knopf) {
+    var a = U.liste[U.i]; U.versuch++;
+    var r = $('u-rueck'); r.textContent = ''; r.hidden = false; r.className = 'rueck' + (ok ? '' : ' falsch');
+    var p1 = document.createElement('p'), p2 = document.createElement('p');
+    if (ok) {
+      p1.textContent = U.versuch === 1 ? 'Richtig.' : 'Richtig, beim zweiten Versuch.';
+      if (U.versuch === 1) U.erst++; else U.zweit++;
+      fertig();
+    } else if (U.versuch === 1) {
+      p1.textContent = 'Noch nicht. Versuch es noch einmal.';
+      if (knopf) { knopf.classList.add('falsch'); knopf.disabled = true; }
+      r.appendChild(p1); return;
+    } else {
+      U.offen++;
+      p1.textContent = 'Leider falsch. Richtig ist: ' + (a.o ? a.o[0] : a.t[0]) + '.';
+      if (knopf) knopf.classList.add('falsch');
+      fertig();
+    }
+    p2.textContent = a.e; r.appendChild(p1); r.appendChild(p2);
+  }
+  function fertig() {
+    var a = U.liste[U.i];
+    Array.prototype.forEach.call($('u-optionen').children, function (k) { k.disabled = true; if (a.o && k.textContent === a.o[0]) k.classList.add('richtig'); });
+    $('u-feld').disabled = true;
+    $('u-weiter').hidden = false; $('u-weiter').focus();
+  }
+  $('u-eingabe').addEventListener('submit', function () {
+    var a = U.liste[U.i], v = norm($('u-feld').value);
+    if (!v || $('u-feld').disabled) return;
+    antworte(a.t.some(function (t) { return norm(t) === v; }), null);
+  });
+  $('u-weiter').onclick = function () {
+    U.i++;
+    if (U.i < U.liste.length) { aufgabe(); return; }
+    $('e-titel').textContent = U.b.name + ': geschafft';
+    $('e-ergebnis').textContent = 'Richtig beim ersten Versuch: ' + U.erst + '. Beim zweiten: ' + U.zweit + '. Noch offen: ' + U.offen + '.';
+    $('e-prompt').hidden = true; zeige('s-ende');
+  };
+  $('u-abbruch').onclick = function () { zeige('s-start'); start(); };
+  $('e-uebersicht').onclick = function () { zeige('s-start'); start(); };
+  $('e-weiterlernen').onclick = function () {
+    var b = schwaechster(true) || U.b, p = daten.punkte[b.id];
+    var punkte = p === '' || p === undefined ? '' : ' ' + p + ' von ' + b.max + ' Punkten erreicht';
+    $('e-text').textContent = 'Ich bin in der 8. Schulstufe und habe bei der Englisch-Schularbeit ' + b.im + (punkte || ' am wenigsten Punkte erreicht') + '. Erklär mir ' + b.thema + ' in drei Sätzen. Stell mir dann acht Übungssätze, einen nach dem anderen, und verrate die Lösung erst, wenn ich es versucht habe.';
+    $('e-prompt').hidden = false;
+  };
+  $('e-kopieren').onclick = function () {
+    var text = $('e-text').textContent, k = this;
+    function ok() { k.textContent = 'Kopiert'; setTimeout(function () { k.textContent = 'Prompt kopieren'; }, 2000); }
+    function alt() { var t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); ok(); } catch (e) {} t.remove(); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, alt); else alt();
+  };
+  start();
+  window.__app = { daten: function () { return daten; }, AUFGABEN: AUFGABEN };
+})();
+</script>
+</body>
+</html>

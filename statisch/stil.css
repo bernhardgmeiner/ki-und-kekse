@@ -1,0 +1,166 @@
+/* KI & Kekse – Design „5A mit Keks“. Farben, Schriften und Raster: siehe Design-Dokument. */
+
+@font-face{font-family:"Figtree";src:url("schrift/figtree.woff2") format("woff2");font-weight:300 900;font-display:swap}
+@font-face{font-family:"Pixelify Sans";src:url("schrift/pixelify.woff2") format("woff2");font-weight:400 700;font-display:swap}
+
+:root{
+  --gruen:#1f5a3d; --gruen-dunkel:#16432e; --creme:#f6efe3; --rot:#c0303a; --gelb:#f2c14e;
+  --teig:#dfa65f; --rand:#a8692f; --schoko:#4a2a18; --text:#1f2e25; --grund:#fbf7ef; --papier:#fffaf2;
+  --leise:#5f5348;
+  --m:8px;   /* Maschengröße der Türchen und des Norwegerbands */
+  --w:6px;   /* Masche des Schriftzugs */
+  --z:7px;   /* Masche des Zeichens */
+  --strick:conic-gradient(from -50deg at 50% 100%, transparent 0deg, rgba(0,0,0,.2) 6deg 22deg, rgba(255,255,255,.1) 26deg 38deg, transparent 40deg 60deg, rgba(255,255,255,.1) 62deg 74deg, rgba(0,0,0,.2) 78deg 94deg, transparent 100deg), linear-gradient(rgba(0,0,0,.1) 0 1px, transparent 1px);
+  --pixel:"Pixelify Sans","Figtree",system-ui,sans-serif;
+}
+@media (max-width:359px){:root{--m:7px;--w:5px;--z:6px}}
+@media (min-width:720px){:root{--m:10px;--w:8px;--z:9px}}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:"Figtree",system-ui,sans-serif;font-size:17px;line-height:1.58;color:var(--text);background:var(--grund)}
+a{color:var(--text)}
+a:hover{color:var(--rot)}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--gelb);outline-offset:3px}
+.nur-vorlesen{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Gestricktes */
+.pullover{position:relative;background-color:var(--gruen);background-image:var(--strick);background-size:var(--m) var(--m);color:var(--creme)}
+.buendchen{height:40px;background:repeating-linear-gradient(90deg,var(--gruen-dunkel) 0 4px,var(--gruen) 4px 8px)}
+.px{display:block;position:relative;flex:none;background-image:var(--img);background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated}
+.strick::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:var(--strick);background-size:var(--s) var(--s);-webkit-mask:var(--img) center/100% 100% no-repeat;mask:var(--img) center/100% 100% no-repeat}
+.zeichen{--s:var(--z);width:calc(var(--z)*14);height:calc(var(--z)*14)}
+.schriftzug{--s:var(--w);width:calc(var(--w)*51);height:calc(var(--w)*7)}
+.band{position:relative;height:calc(var(--m)*11);background-color:var(--gruen);background-image:var(--img-band);background-size:calc(var(--m)*40) calc(var(--m)*11);background-position:center top;background-repeat:repeat-x;image-rendering:pixelated}
+.band::after{content:"";position:absolute;inset:0;background-image:var(--strick);background-size:var(--m) var(--m);background-position:calc(50% + var(--m)/2) 0}
+.zahl{display:block;flex:none;background-color:currentColor;-webkit-mask:var(--img) center/100% 100% no-repeat;mask:var(--img) center/100% 100% no-repeat;width:calc(var(--p)*var(--zb));height:calc(var(--p)*5)}
+
+/* Startseite */
+.kopf{display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 24px 0}
+.kopf .name{font-family:var(--pixel);font-weight:500;font-size:15px;letter-spacing:.08em;color:var(--creme);text-decoration:none}
+.kopf .zeichen{margin-top:18px}
+.kopf h1{margin:18px 0 0}
+.kopf .untertitel{margin:14px 0 0;font-size:17px;font-weight:600}
+.kopf .datum{margin:8px 0 0;font-family:var(--pixel);font-weight:500;font-size:16px;color:var(--gelb)}
+.tueren{list-style:none;margin:0 auto;padding:22px 14px 26px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:calc(var(--m)*50)}
+@media (min-width:720px){.tueren{grid-template-columns:repeat(6,minmax(0,1fr));max-width:calc(var(--m)*78)}}
+.tueren li{display:flex;align-items:center;justify-content:center;height:calc(var(--m)*12)}
+.tuer{--p:var(--m);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--m)/2);width:calc(var(--m)*10);height:calc(var(--m)*10);padding:0;border:0;border-radius:0;background:var(--creme);color:var(--gruen);text-decoration:none;box-shadow:inset 0 0 0 calc(var(--m)/2) rgba(0,0,0,.08),0 3px 0 rgba(0,0,0,.18)}
+.tuer::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:var(--strick);background-size:var(--m) var(--m)}
+.tuer .keks,.tuer .heute{display:none}
+.tuer.ist-heute{background:var(--gelb);color:var(--rot)}
+.tuer.ist-heute .zahl{--p:calc(var(--m)*.75)}
+.tuer.ist-heute .heute{display:block;padding:0 6px;background:var(--creme);color:var(--rot);font-family:var(--pixel);font-weight:600;font-size:calc(var(--m)*1.5);line-height:1.35}
+.tuer.ist-offen{background:var(--rot);color:var(--creme)}
+.tuer.ist-offen .zahl{--p:calc(var(--m)/2);position:absolute;left:calc(var(--m)/2);top:calc(var(--m)/2)}
+.tuer.ist-offen .keks{display:block;position:absolute;left:calc(var(--m)*2);top:calc(var(--m)*2);width:calc(var(--m)*7);height:calc(var(--m)*7)}
+a.tuer:hover{transform:translateY(-2px)}
+.tuer.wackelt{animation:wackeln .4s}
+@keyframes wackeln{25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-2px)}}
+@media (prefers-reduced-motion:reduce){.tuer.wackelt{animation:none}a.tuer:hover{transform:none}}
+
+.fuss{display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center;padding:32px 24px 40px;max-width:560px;margin:0 auto}
+.fuss .links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;font-size:15px;font-weight:600}
+.fuss .fuer-alle{margin:0;font-size:16px;line-height:1.5;font-weight:500}
+.fuss .hinweis{margin:0;font-size:13.5px;line-height:1.5;color:var(--leise)}
+.fuss .recht{font-size:13px;color:var(--leise)}
+.fuss .recht a{color:inherit}
+
+.knopf{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;padding:8px 18px;border:0;border-radius:0;background:var(--gruen);color:var(--creme);font-family:var(--pixel);font-weight:600;font-size:19px;text-decoration:none;box-shadow:0 4px 0 var(--gruen-dunkel)}
+.knopf:hover{color:var(--gelb)}
+.knopf:active{transform:translateY(2px);box-shadow:0 2px 0 var(--gruen-dunkel)}
+
+.meldung{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:calc(100vw - 32px);padding:10px 16px;background:var(--text);color:var(--papier);font-family:var(--pixel);font-size:16px;text-align:center;z-index:20}
+.vorschau-leiste{position:sticky;top:0;z-index:30;display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center;padding:6px 12px;background:var(--gelb);color:var(--text);font-size:13.5px;font-weight:600}
+.vorschau-leiste a{color:inherit}
+.vorschau-leiste select{font:inherit;font-weight:600;padding:2px 4px;border:2px solid var(--text);border-radius:0;background:var(--papier);color:var(--text)}
+
+/* Türchenseite */
+.leiste{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 22px 0}
+.leiste .zurueck{font-family:var(--pixel);font-size:15px;color:var(--creme);text-decoration:none;padding:6px 0}
+.leiste .marke{display:flex;align-items:center;gap:8px;text-decoration:none}
+.leiste .zeichen{--z:2px}
+.leiste .schriftzug{--w:3px}
+.tuerkopf .band{margin-top:18px}
+.grosse-tuer{display:flex;justify-content:center;padding:30px 0 34px}
+.grosse-tuer .tuer{--m:10px;width:160px;height:160px;box-shadow:inset 0 0 0 5px rgba(0,0,0,.08),0 3px 0 rgba(0,0,0,.18)}
+.grosse-tuer .tuer.ist-offen .zahl{--p:6px;left:6px;top:6px}
+.grosse-tuer .tuer.ist-offen .keks{left:30px;top:30px;width:120px;height:120px}
+.grosse-tuer .tuer:not(.ist-offen) .zahl{--p:14px}
+.tuerkopf + .buendchen{height:30px}
+
+.inhalt{max-width:660px;margin:0 auto;padding:26px 24px 0}
+.inhalt > * + *{margin-top:14px}
+.dachzeile{margin:0;font-weight:700;font-size:15px;letter-spacing:.02em;color:var(--rot)}
+.inhalt h1{margin:8px 0 0;font-weight:700;font-size:32px;line-height:1.1}
+.inhalt .nutzen{font-size:19px;line-height:1.45;font-weight:500}
+.info{margin:18px 0 0;padding:12px 14px;background:var(--papier);border:2px solid var(--gruen);font-size:15.5px;line-height:1.5}
+.info div + div{margin-top:6px}
+.info dt{display:inline;font-family:var(--pixel);font-weight:600;color:var(--gruen)}
+.info dt::after{content:": "}
+.info dd{display:inline;margin:0}
+.text > * + *{margin-top:14px}
+.text h2{margin:30px 0 0;font-family:var(--pixel);font-weight:600;font-size:21px;line-height:1.25;color:var(--gruen)}
+.text p,.text ul,.text ol{margin-bottom:0}
+.text ul,.text ol{padding-left:1.35em}
+.text li + li{margin-top:8px}
+.text li > p{margin:0}
+.text a{text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-color:var(--rot)}
+.text blockquote{margin-left:0;margin-right:0;padding:12px 16px;background:var(--papier);border:2px dotted var(--rand);font-size:16px}
+.text blockquote > :first-child{margin-top:0}
+.text blockquote > * + *{margin-top:10px}
+.tabelle{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tabelle table{border-collapse:collapse;width:100%;min-width:520px;font-size:15px;line-height:1.4;background:var(--papier)}
+.tabelle th{background:var(--gruen);color:var(--creme);font-family:var(--pixel);font-weight:600;text-align:left}
+.tabelle th,.tabelle td{padding:8px 10px;border:1px solid #d9cdb8;vertical-align:top}
+.tabelle.karten{overflow:visible}
+@media (max-width:639px){
+  .tabelle.karten table{min-width:0;background:none;border:0}
+  .tabelle.karten thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .tabelle.karten tr{display:block;margin-top:12px;padding:10px 12px;background:var(--papier);border:2px solid var(--gruen)}
+  .tabelle.karten td{display:block;padding:4px 0;border:0}
+  .tabelle.karten td:first-child{font-family:var(--pixel);font-weight:600;font-size:16px;color:var(--rot)}
+  .tabelle.karten td:not(:first-child)::before{content:attr(data-etikett);display:block;font-weight:700;font-size:13px;color:var(--gruen)}
+}
+.grafik{margin-left:0;margin-right:0}
+.grafik img{display:block;width:100%;height:auto;border:3px solid var(--gruen)}
+.grafik figcaption{margin-top:8px;font-size:14.5px}
+.prompt{display:flex;flex-direction:column;gap:10px;padding:16px;background:var(--papier);border:3px dashed var(--rot);border-radius:10px;box-shadow:0 0 0 5px var(--papier)}
+.prompt .titel{font-family:var(--pixel);font-weight:600;font-size:18px;color:var(--rot)}
+.prompt pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:15.5px;line-height:1.6}
+.prompt code{font-family:inherit}
+.kopieren{align-self:flex-end;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:0;border-radius:0;background:var(--text);color:var(--papier);font-family:var(--pixel);font-weight:600;font-size:15px}
+.werkzeug{border:3px solid var(--gruen);background:var(--papier)}
+.werkzeug iframe{display:block;width:100%;height:620px;border:0}
+.werkzeug iframe[data-ordner="quizturnier"]{height:680px}
+.werkzeug .gross{display:block;padding:10px 14px;border-top:3px solid var(--gruen);font-family:var(--pixel);font-weight:600;font-size:15px}
+.platzhalter{padding:14px 16px;border:2px dashed var(--leise);color:var(--leise);font-size:15px}
+.credit{font-size:14.5px;color:var(--leise)}
+.credit a{color:inherit}
+.inhalt .knopf{margin-top:26px}
+.mehr{max-width:660px;margin:28px auto 0;padding:0 24px 36px}
+.mehr .rahmen{display:flex;flex-direction:column;gap:12px;padding-top:16px;border-top:3px dashed rgba(192,48,58,.33)}
+.mehr .ueber{font-size:14.5px;font-weight:600}
+.mehr .links{display:flex;flex-wrap:wrap;gap:10px}
+.mehr .links a{padding:9px 14px;font-size:14.5px;text-decoration:none;border:2px solid var(--text)}
+.mehr .recht{font-size:13px;color:var(--leise)}
+.mehr .recht a{color:inherit}
+
+/* Sperre: Solange ein Türchen zu ist, bleibt der Text verborgen. */
+.gesperrt{display:none;max-width:660px;margin:0 auto;padding:30px 24px 10px;text-align:center}
+.gesperrt p{margin:0 0 20px;font-size:19px;font-weight:500}
+html.zu .inhalt,html.zu .nur-offen{display:none}
+html.zu .gesperrt{display:block}
+
+/* Instagram-Reel mit zwei Klicks */
+.reel{margin:24px 0;border:3px solid var(--gruen);background:var(--papier)}
+.reel-karte{display:flex;gap:16px;align-items:flex-start;padding:16px}
+.reel-zeichen{flex:none;width:56px;height:56px;background:var(--rot);position:relative}
+.reel-zeichen::after{content:"";position:absolute;left:21px;top:16px;border-style:solid;border-width:12px 0 12px 18px;border-color:transparent transparent transparent var(--creme)}
+.reel-titel{margin:0;font-weight:700;font-size:18px;line-height:1.3}
+.reel-hinweis{margin:6px 0 12px;font-size:15px;color:var(--leise,#5f5348)}
+.reel-knoepfe{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center}
+.reel-knoepfe .knopf{width:auto;min-height:48px;padding:0 22px}
+.reel-knoepfe a{font-weight:600}
+.reel iframe{display:block;width:100%;max-width:420px;height:735px;margin:0 auto;border:0;background:#fff}

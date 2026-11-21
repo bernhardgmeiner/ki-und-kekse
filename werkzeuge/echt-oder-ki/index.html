@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Echt oder KI? Bilderset mit Auflösung – KI &amp; Kekse</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../gemeinsam.css">
+<style>
+body{background:var(--papier)}
+.huelle{max-width:980px;padding:12px}
+.kopf{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.zaehler{font-family:var(--pixel);font-weight:600;font-size:22px;color:var(--gruen)}
+.zaehler span{font-family:"Figtree",system-ui,sans-serif;font-weight:800}
+.voll{width:48px;padding:0}
+.buehne{position:relative;aspect-ratio:4/3;max-height:520px;width:100%;background:#1f2e25;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.buehne img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+.leiste{display:flex;gap:10px;margin-top:12px;align-items:stretch}
+.leiste .knopf{flex:1;min-width:0;padding:0 10px}
+.leiste .knopf.gelb{flex:1.4}
+.aufloesung{margin-top:12px;padding:12px 14px;border:3px solid var(--gruen);background:#fff}
+.aufloesung.ki{border-color:var(--rot)}
+.urteil{margin:0 0 6px;font-family:var(--pixel);font-weight:600;font-size:clamp(24px,4vw,40px);line-height:1.1;color:var(--ok)}
+.aufloesung.ki .urteil{color:var(--rot)}
+.aufloesung p{margin:0}
+.aufloesung p + p{margin-top:6px}
+.quelle{font-size:14px;color:var(--leise)}
+.quelle a{color:inherit}
+.ende{margin-top:12px;text-align:center}
+/* Überblick */
+.raster12{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,170px),1fr));margin-top:12px}
+.kachel{display:flex;flex-direction:column;border:3px solid var(--gruen);background:#fff}
+.kachel.ki.offen{border-color:var(--rot)}
+.kachel button.bild{display:block;padding:0;border:0;background:#1f2e25;aspect-ratio:4/3;overflow:hidden}
+.kachel button.bild img{display:block;width:100%;height:100%;object-fit:cover}
+.kachel .unten{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px}
+.kachel .nr{font-weight:800;font-size:17px}
+.kachel .neben{min-height:40px;padding:0 10px;font-size:14px}
+.kachel .marke{font-family:var(--pixel);font-weight:600;font-size:18px;color:var(--ok)}
+.kachel.ki .marke{color:var(--rot)}
+.summe{margin-top:12px;font-weight:600}
+/* Vollbild am Beamer */
+html.vollbild body{background:#1f2e25;color:var(--creme)}
+html.vollbild .huelle{max-width:none;height:100vh;display:flex;flex-direction:column;padding:12px 18px}
+html.vollbild .zaehler{color:var(--creme)}
+html.vollbild .voll{border-color:var(--creme);color:var(--creme)}
+html.vollbild .buehne{flex:1;min-height:0;aspect-ratio:auto;max-height:none}
+html.vollbild .aufloesung{position:fixed;left:18px;right:18px;bottom:84px;max-width:900px;margin:0 auto;color:var(--text);box-shadow:0 6px 0 rgba(0,0,0,.35)}
+html.vollbild .hinweis{display:none}
+@media (max-width:420px){.leiste .knopf{font-size:16px}}
+</style>
+</head>
+<body>
+<div class="huelle">
+
+<section id="einzeln" aria-label="Bilder einzeln zeigen">
+  <div class="kopf">
+    <div class="zaehler" aria-live="polite">Bild <span id="nr">1</span> von <span>12</span></div>
+    <div class="reihe">
+      <button type="button" class="neben" id="zumUeberblick">Überblick</button>
+      <button type="button" class="neben voll" id="voll" aria-label="Vollbild ein oder aus"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
+    </div>
+  </div>
+  <div class="buehne"><img id="bild" src="bilder/bild-01.jpg" alt=""></div>
+  <div class="aufloesung" id="aufloesung" hidden>
+    <p class="urteil" id="urteil"></p>
+    <p id="erklaerung"></p>
+    <p class="quelle" id="quelle"></p>
+  </div>
+  <div class="leiste">
+    <button type="button" class="knopf" id="zurueck">‹ Zurück</button>
+    <button type="button" class="knopf gelb" id="aufloesen">Auflösen</button>
+    <button type="button" class="knopf" id="weiter">Weiter ›</button>
+  </div>
+  <p class="hinweis klein" style="margin-top:12px">Pfeiltasten blättern, die Taste A löst auf. Die Auflösung erscheint erst, wenn du tippst. Für den Ablauf im Türchen (erst am Ende auflösen) blätterst du einfach weiter und deckst im Überblick auf.</p>
+</section>
+
+<section id="ueberblick" aria-label="Überblick über alle zwölf Bilder" hidden>
+  <div class="kopf">
+    <h1>Alle zwölf im Überblick</h1>
+    <div class="reihe">
+      <button type="button" class="neben" id="zurueckEinzeln">Einzeln zeigen</button>
+      <button type="button" class="knopf gelb" id="alleAuf">Alle aufdecken</button>
+    </div>
+  </div>
+  <div class="raster12" id="raster"></div>
+  <p class="summe" id="summe" hidden>Sechs Bilder sind echte Fotos, sechs hat Gemini generiert.</p>
+</section>
+
+</div>
+<script>
+(function () {
+  'use strict';
+  var CC = {
+    'CC BY 2.0': 'https://creativecommons.org/licenses/by/2.0/deed.de',
+    'CC BY 4.0': 'https://creativecommons.org/licenses/by/4.0/deed.de',
+    'CC BY-SA 3.0': 'https://creativecommons.org/licenses/by-sa/3.0/deed.de',
+    'CC BY-SA 4.0': 'https://creativecommons.org/licenses/by-sa/4.0/deed.de'
+  };
+  function datei(name) { return 'https://commons.wikimedia.org/wiki/File:' + encodeURIComponent(name.replace(/ /g, '_')); }
+
+  var BILDER = [
+    { motiv: 'ein Würstelstand am Abend', ki: true,
+      text: 'Das große Schild ist fehlerfrei, sogar die Umlaute. Die Spur steckt in den kleinen Tafeln am Stand: Dort steht nur Gekritzel.' },
+    { motiv: 'grüne Berge mit roten Felswänden', ki: false,
+      text: 'Danxia-Felsen am Danxiashan in der Provinz Guangdong, China. Der Berg gehört seit 2010 zum UNESCO-Welterbe „China Danxia“.',
+      autor: 'xiquinhosilva', lizenz: 'CC BY 2.0', datei: '38997-Danxiashan (48988860616).jpg' },
+    { motiv: 'ein Fuchs im Schnee', ki: true,
+      text: 'Hier findet man kaum eine Spur. Genau solche Bilder halten die meisten für Fotos.' },
+    { motiv: 'ein blaues Meerestier', ki: false,
+      text: 'Glaucus atlanticus, der Blaue Drache: eine wenige Zentimeter große Meeresschnecke, die an der Wasseroberfläche treibt.',
+      autor: 'Taro Taylor', lizenz: 'CC BY 2.0', datei: 'Glaucus atlanticus 1 cropped.jpg' },
+    { motiv: 'ein Geländewagen auf einer spiegelnden Fläche', ki: false,
+      text: 'Salar de Uyuni in Bolivien, die größte Salzfläche der Erde. Nach Regen spiegelt sie den Himmel.',
+      autor: 'Christopher Crouzet', lizenz: 'CC BY-SA 4.0', datei: 'Reflection on the Salar de Uyuni, bolivia.jpg' },
+    { motiv: 'ein Atlas auf einem Schultisch', ki: true,
+      text: 'Auf der Karte steht „Indianr Ozean“, Afrika hat keinen einzigen Namen, und die Kontinente sind verzogen.' },
+    { motiv: 'bunte Baumrinde', ki: false,
+      text: 'Rinde eines Regenbogen-Eukalyptus (Eucalyptus deglupta). Sie löst sich in Streifen ab; darunter ist sie erst grün und färbt sich dann.',
+      autor: 'Raffi Kojian (Gardenology.org)', lizenz: 'CC BY-SA 3.0', datei: 'Gardenology.org-IMG 2635 ucla09.jpg' },
+    { motiv: 'gestreifte Felsen mit einem Holzsteg', ki: true,
+      text: 'Die Landschaft wirkt echt, den Ort gibt es aber nicht. Frag die Klasse, wo das sein soll.' },
+    { motiv: 'Kaiserschmarrn in der Pfanne', ki: false,
+      text: 'Ein ganz normales Foto, nicht besonders schön ausgeleuchtet. Gerade das macht es glaubwürdig.',
+      autor: 'Jensflorian', lizenz: 'CC BY-SA 3.0', datei: 'Kaiserschmarrn.jpg' },
+    { motiv: 'eine Schultafel mit Rechnungen', ki: true,
+      text: 'Die Rechnungen stimmen sogar (6 · 247 = 1482). Auf der linken Tafel steht aber Kauderwelsch.' },
+    { motiv: 'eine ufoförmige Wolke über einem Berg', ki: false,
+      text: 'Eine Linsenwolke über dem Mauna Kea auf Hawaii. Solche Wolken entstehen, wenn Wind über einen Berg strömt. Das Gemini-Observatorium heißt wirklich so und hat mit Googles KI nichts zu tun.',
+      autor: 'International Gemini Observatory/NOIRLab/NSF/AURA', lizenz: 'CC BY 4.0', datei: 'Lenticular Cloud Over Mauna Kea (gemini-20031125-lenticpanflatII).jpg' },
+    { motiv: 'Kaiserschmarrn im Gasthaus', ki: true,
+      text: 'Auf der Speisekarte steht „Eierdlichen Wirtshause“ und „Menükarte“. Solche Wörter gibt es nicht.' }
+  ];
+  BILDER.forEach(function (b, i) { b.src = 'bilder/bild-' + (i < 9 ? '0' : '') + (i + 1) + '.jpg'; });
+
+  var $ = function (id) { return document.getElementById(id); };
+  var jetzt = 0;
+  var offen = BILDER.map(function () { return false; });
+
+  function quelleHtml(b) {
+    if (b.ki) return 'Generiert mit Gemini (Google), November 2026.';
+    return 'Foto: ' + b.autor + ', Lizenz <a href="' + CC[b.lizenz] + '" target="_blank" rel="noopener">' + b.lizenz + '</a>, <a href="' + datei(b.datei) + '" target="_blank" rel="noopener">Wikimedia Commons</a> (verkleinert).';
+  }
+
+  function zeige(i) {
+    jetzt = Math.max(0, Math.min(BILDER.length - 1, i));
+    var b = BILDER[jetzt];
+    $('bild').src = b.src;
+    $('bild').alt = 'Bild ' + (jetzt + 1) + ' von 12: ' + b.motiv;
+    $('nr').textContent = jetzt + 1;
+    $('aufloesung').hidden = true;
+    $('aufloesen').textContent = 'Auflösen';
+    $('zurueck').disabled = jetzt === 0;
+    $('weiter').textContent = jetzt === BILDER.length - 1 ? 'Überblick ›' : 'Weiter ›';
+    if (jetzt + 1 < BILDER.length) { var v = new Image(); v.src = BILDER[jetzt + 1].src; }
+  }
+
+  function loese() {
+    var box = $('aufloesung');
+    if (!box.hidden) { box.hidden = true; $('aufloesen').textContent = 'Auflösen'; return; }
+    var b = BILDER[jetzt];
+    offen[jetzt] = true;
+    box.className = 'aufloesung' + (b.ki ? ' ki' : '');
+    $('urteil').textContent = b.ki ? 'Generiert' : 'Echt';
+    $('erklaerung').textContent = b.text;
+    $('quelle').innerHTML = quelleHtml(b);
+    box.hidden = false;
+    $('aufloesen').textContent = 'Verbergen';
+  }
+
+  function baueRaster() {
+    var r = $('raster');
+    r.innerHTML = '';
+    BILDER.forEach(function (b, i) {
+      var k = document.createElement('div');
+      k.className = 'kachel' + (offen[i] && b.ki ? ' ki offen' : '') + (offen[i] && !b.ki ? ' offen' : '');
+      var knopf = document.createElement('button');
+      knopf.type = 'button';
+      knopf.className = 'bild';
+      knopf.setAttribute('aria-label', 'Bild ' + (i + 1) + ' groß zeigen');
+      var im = document.createElement('img');
+      im.src = b.src; im.alt = 'Bild ' + (i + 1) + ': ' + b.motiv; im.loading = 'lazy';
+      knopf.appendChild(im);
+      knopf.addEventListener('click', function () { wechsle(false); zeige(i); });
+      var unten = document.createElement('div');
+      unten.className = 'unten';
+      var nr = document.createElement('span');
+      nr.className = 'nr'; nr.textContent = i + 1;
+      unten.appendChild(nr);
+      if (offen[i]) {
+        var m = document.createElement('span');
+        m.className = 'marke'; m.textContent = b.ki ? 'Generiert' : 'Echt';
+        if (b.ki) k.classList.add('ki');
+        unten.appendChild(m);
+      } else {
+        var a = document.createElement('button');
+        a.type = 'button'; a.className = 'neben'; a.textContent = 'Auflösen';
+        a.addEventListener('click', function () { offen[i] = true; baueRaster(); });
+        unten.appendChild(a);
+      }
+      k.appendChild(knopf); k.appendChild(unten);
+      r.appendChild(k);
+    });
+    $('summe').hidden = !offen.every(Boolean);
+  }
+
+  function wechsle(zumUeberblick) {
+    $('einzeln').hidden = zumUeberblick;
+    $('ueberblick').hidden = !zumUeberblick;
+    if (zumUeberblick) baueRaster();
+  }
+
+  $('zurueck').addEventListener('click', function () { zeige(jetzt - 1); });
+  $('weiter').addEventListener('click', function () {
+    if (jetzt === BILDER.length - 1) wechsle(true); else zeige(jetzt + 1);
+  });
+  $('aufloesen').addEventListener('click', loese);
+  $('zumUeberblick').addEventListener('click', function () { wechsle(true); });
+  $('zurueckEinzeln').addEventListener('click', function () { wechsle(false); zeige(jetzt); });
+  $('alleAuf').addEventListener('click', function () { offen = offen.map(function () { return true; }); baueRaster(); });
+
+  document.addEventListener('keydown', function (e) {
+    if ($('einzeln').hidden || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); $('weiter').click(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); if (jetzt > 0) zeige(jetzt - 1); }
+    else if (e.key === 'a' || e.key === 'A') { e.preventDefault(); loese(); }
+  });
+
+  $('voll').addEventListener('click', function () {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    } catch (e) {}
+  });
+  document.addEventListener('fullscreenchange', function () {
+    document.documentElement.classList.toggle('vollbild', !!document.fullscreenElement);
+  });
+
+  window.__echtoderki = { BILDER: BILDER, zeige: zeige, loese: loese, wechsle: wechsle };
+  zeige(0);
+})();
+</script>
+</body>
+</html>

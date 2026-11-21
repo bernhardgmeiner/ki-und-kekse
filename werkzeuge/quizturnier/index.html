@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quizturnier am Beamer – KI &amp; Kekse</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../gemeinsam.css">
+<style>
+body{background:var(--creme)}
+.kopf{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;background:var(--gruen);color:var(--creme)}
+.kopf h1{color:var(--creme);font-size:20px}
+.kopf .neben{border-color:var(--creme);color:var(--creme);min-height:40px}
+.zwei{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:760px){.zwei{grid-template-columns:1fr 2fr}}
+#fragen{min-height:220px;font-size:14.5px;white-space:pre;overflow-wrap:normal;overflow-x:auto}
+#teams{min-height:220px}
+.status{margin-top:8px;font-size:15px}
+.status.fehler{color:var(--rot);font-weight:600}
+/* Turnierbaum */
+.baum{display:flex;gap:18px;overflow-x:auto;padding:4px 2px 12px}
+.runde{flex:1 0 170px;display:flex;flex-direction:column;justify-content:space-around;gap:12px}
+.runde h2{font-size:16px;text-align:center}
+.spiel{background:var(--papier);border:2px solid var(--gruen)}
+.spiel.aktiv{border-color:var(--rot);box-shadow:0 0 0 3px var(--gelb)}
+.spiel div{display:flex;justify-content:space-between;gap:8px;padding:6px 10px;min-height:36px;font-weight:600}
+.spiel div + div{border-top:1px solid #d9cdb8}
+.spiel .sieg{background:var(--gelb)}
+.spiel .raus{color:#8c8178;text-decoration:line-through}
+.spiel .leer{color:#8c8178;font-weight:400;font-style:italic}
+.leiste{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:12px 0}
+.vorrat{font-weight:700;font-size:16px}
+.vorrat.knapp{color:var(--rot)}
+/* Duell */
+.duell{display:flex;flex-direction:column;gap:14px;min-height:calc(100vh - 70px);padding:14px 16px}
+.paar{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;text-align:center}
+.team{padding:8px 10px;background:var(--gruen);color:var(--creme);font-family:var(--pixel);font-weight:600;font-size:clamp(18px,2.6vw,34px);overflow-wrap:anywhere}
+.team .pkt{display:block;font-size:.7em;color:var(--gelb)}
+.vs{font-family:var(--pixel);font-size:clamp(16px,2vw,26px);color:var(--rot)}
+.frage{margin:0;font-weight:700;font-size:clamp(22px,3.6vw,50px);line-height:1.15;text-align:center;overflow-wrap:anywhere}
+.antworten{display:grid;gap:10px;grid-template-columns:1fr}
+@media (min-width:760px){.antworten{grid-template-columns:repeat(3,1fr)}}
+.antwort{display:flex;gap:12px;align-items:center;padding:12px 14px;background:var(--papier);border:3px solid var(--gruen);font-size:clamp(18px,2.4vw,32px);font-weight:600;overflow-wrap:anywhere}
+.antwort b{flex:none;display:inline-flex;align-items:center;justify-content:center;width:1.7em;height:1.7em;background:var(--gruen);color:var(--creme);font-family:var(--pixel)}
+.antwort.richtig{background:#e3f3e8;border-color:var(--ok)}
+.antwort.richtig b{background:var(--ok)}
+.antwort.blass{opacity:.45}
+.wertung{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+@media (min-width:760px){.wertung{grid-template-columns:repeat(4,1fr)}}
+.wertung .knopf{font-size:16px;min-height:56px;padding:0 10px;text-align:center}
+.ergebnis{padding:14px;text-align:center;font-family:var(--pixel);font-size:clamp(20px,3vw,40px);font-weight:600;background:var(--gelb)}
+.unten{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-top:auto}
+/* Ende */
+.krone{font-family:var(--pixel);font-size:clamp(30px,6vw,80px);font-weight:700;color:var(--rot);text-align:center;margin:10px 0 0}
+.ende-name{font-size:clamp(26px,5vw,64px);font-weight:800;text-align:center;margin:6px 0 18px}
+.liste li{margin-top:10px}
+.liste .loes{color:var(--ok);font-weight:700}
+</style>
+</head>
+<body>
+<header class="kopf">
+<h1>Quizturnier</h1>
+<div class="reihe">
+<button type="button" class="neben" id="voll">Vollbild</button>
+</div>
+</header>
+
+<!-- Eingabe -->
+<section id="s-start" class="huelle">
+<div class="zwei">
+<div class="feld">
+<label for="teams">Teams, eines pro Zeile</label>
+<textarea id="teams" spellcheck="false" autocomplete="off">Team 1
+Team 2
+Team 3
+Team 4
+Team 5
+Team 6
+Team 7
+Team 8</textarea>
+<div class="feld" style="margin-top:12px">
+<label for="punkte">Punkte bis zum Weiterkommen</label>
+<select id="punkte"><option selected>1</option><option>2</option><option>3</option></select>
+</div>
+</div>
+<div class="feld">
+<label for="fragen">Fragen: Frage, A, B, C, richtige Antwort</label>
+<textarea id="fragen" spellcheck="false" autocomplete="off" placeholder="Aus einer Tabelle kopieren (Spalten mit Tabulator) oder die Tabelle mit senkrechten Strichen aus dem Chat einfügen."></textarea>
+<div class="reihe" style="margin-top:8px"><button type="button" class="neben" id="beispiel">Drei Beispielfragen einfügen</button></div>
+<p class="status" id="status" aria-live="polite"></p>
+</div>
+</div>
+<p class="klein">Kopfzeile und Trennlinie werden übersprungen, weitere Spalten ignoriert. Die Fragen kommen in der Reihenfolge der Liste, keine zweimal. Nichts wird gespeichert oder verschickt; Teamnamen genügen.</p>
+<div class="reihe"><button type="button" class="knopf" id="los">Paarungen auslosen</button></div>
+</section>
+
+<!-- Turnierbaum -->
+<section id="s-baum" class="huelle" hidden>
+<div class="leiste">
+<span class="vorrat" id="vorrat-baum"></span>
+<div class="reihe">
+<button type="button" class="neben" id="zurueck-baum">Letzte Wertung zurücknehmen</button>
+<button type="button" class="knopf" id="weiter-duell">Nächstes Duell</button>
+</div>
+</div>
+<div class="baum" id="baum"></div>
+<div class="reihe" style="margin-top:8px"><button type="button" class="neben" id="abbruch">Zurück zur Eingabe</button></div>
+</section>
+
+<!-- Duell -->
+<section id="s-duell" class="duell" hidden>
+<div class="paar">
+<div class="team" id="t-a"></div><div class="vs">gegen</div><div class="team" id="t-b"></div>
+</div>
+<div id="fragebereich">
+<p class="frage" id="frage"></p>
+<div class="antworten" id="antworten" style="margin-top:14px"></div>
+</div>
+<div class="warnung" id="aus" hidden>
+<p style="margin:0 0 10px">Die Fragen sind aus. Wer kommt weiter?</p>
+<div class="reihe"><button type="button" class="knopf" id="aus-a"></button><button type="button" class="knopf" id="aus-b"></button></div>
+</div>
+<div id="aufloesen-zeile" class="reihe" style="justify-content:center"><button type="button" class="knopf gelb" id="aufloesen">Auflösen</button></div>
+<div class="wertung" id="wertung" hidden>
+<button type="button" class="knopf" id="w-a"></button>
+<button type="button" class="knopf" id="w-b"></button>
+<button type="button" class="knopf" id="w-beide">Beide richtig</button>
+<button type="button" class="knopf rot" id="w-keins">Beide falsch</button>
+</div>
+<div class="ergebnis" id="ergebnis" hidden></div>
+<div class="unten">
+<span class="vorrat" id="vorrat-duell"></span>
+<div class="reihe">
+<button type="button" class="neben" id="zurueck-duell">Letzte Wertung zurücknehmen</button>
+<button type="button" class="neben" id="zum-baum">Turnierbaum</button>
+<button type="button" class="knopf" id="naechste" hidden>Weiter</button>
+</div>
+</div>
+</section>
+
+<!-- Ende -->
+<section id="s-ende" class="huelle" hidden>
+<p class="krone">Turniersieg</p>
+<p class="ende-name" id="sieger"></p>
+<h2 id="falsch-titel">Hier lagen beide Teams falsch</h2>
+<ol class="liste" id="falsch"></ol>
+<div class="reihe" style="margin-top:18px">
+<button type="button" class="neben" id="zurueck-ende">Letzte Wertung zurücknehmen</button>
+<button type="button" class="neben" id="baum-ende">Turnierbaum</button>
+<button type="button" class="knopf" id="neu">Neues Turnier</button>
+</div>
+</section>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var S = null;           // Zustand des Turniers
+  var verlauf = [];       // Schnappschüsse für „zurücknehmen“
+
+  // ---------- Fragen einlesen ----------
+  function zellen(zeile) {
+    if (zeile.indexOf('\t') >= 0) return zeile.split('\t');
+    if (zeile.indexOf('|') >= 0) return zeile.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
+    return null;
+  }
+  function sauber(t) { return t.replace(/\*\*|__|`/g, '').trim(); }
+  function liesFragen(text) {
+    var fragen = [], fehler = [], ersteZeile = true;
+    text.split(/\r?\n/).forEach(function (zeile, i) {
+      if (!zeile.trim()) return;
+      var z = zellen(zeile);
+      if (!z) { fehler.push('Zeile ' + (i + 1) + ': keine Spalten erkannt'); return; }
+      z = z.map(sauber);
+      if (z.every(function (c) { return /^:?-{2,}:?$/.test(c) || c === ''; })) return;       // Trennlinie
+      var r = (z[4] || '').toUpperCase().match(/^\(?([ABC])\)?[).:]?$/), war = ersteZeile;
+      ersteZeile = false;
+      if (z.length < 5 || !r) {
+        if (war) return;                                                                      // Kopfzeile
+        fehler.push('Zeile ' + (i + 1) + ': ' + (z.length < 5 ? 'weniger als fünf Spalten' : 'richtige Antwort ist nicht A, B oder C'));
+        return;
+      }
+      if (!z[0] || !z[1] || !z[2] || !z[3]) { fehler.push('Zeile ' + (i + 1) + ': leere Zelle'); return; }
+      fragen.push({ f: z[0], a: [z[1], z[2], z[3]], r: 'ABC'.indexOf(r[1]) });
+    });
+    return { fragen: fragen, fehler: fehler };
+  }
+  function teamsLesen() {
+    return $('teams').value.split(/\r?\n/).map(function (t) { return t.trim(); }).filter(Boolean);
+  }
+  function pruefeEingabe() {
+    var e = liesFragen($('fragen').value), n = teamsLesen().length, p = +$('punkte').value;
+    var duelle = Math.max(0, n - 1), bedarf = duelle * 3 * p, txt = [], el = $('status');
+    if (n < 2) txt.push('Es braucht mindestens zwei Teams.');
+    if (n > 16) txt.push('Höchstens 16 Teams.');
+    txt.push(e.fragen.length + (e.fragen.length === 1 ? ' Frage erkannt.' : ' Fragen erkannt.'));
+    if (n >= 2) txt.push('Mit ' + n + ' Teams gibt es ' + duelle + (duelle === 1 ? ' Duell' : ' Duelle') + '. Rechne mit etwa ' + 3 * p + ' Fragen pro Duell, also ' + bedarf + '.');
+    if (e.fragen.length && e.fragen.length < bedarf) txt.push('Die Fragen werden knapp: Wenn sie ausgehen, entscheidest du per Klick, wer weiterkommt.');
+    if (e.fehler.length) txt.push('Nicht gelesen: ' + e.fehler.slice(0, 4).join('; ') + (e.fehler.length > 4 ? ' …' : ''));
+    el.textContent = txt.join(' ');
+    el.className = 'status' + (e.fehler.length || n < 2 || n > 16 ? ' fehler' : '');
+    $('los').disabled = n < 2 || n > 16 || !e.fragen.length;
+    return e;
+  }
+  $('teams').addEventListener('input', pruefeEingabe);
+  $('fragen').addEventListener('input', pruefeEingabe);
+  $('punkte').addEventListener('change', pruefeEingabe);
+  $('beispiel').onclick = function () {
+    $('fragen').value = [
+      '| Frage | A | B | C | richtig |', '| --- | --- | --- | --- | --- |',
+      '| Wie viele Spieler:innen eines Teams stehen auf dem Feld? | fünf | sechs | sieben | B |',
+      '| Wie oft darf ein Team den Ball höchstens berühren, bevor er übers Netz muss (der Block zählt nicht)? | zweimal | dreimal | viermal | B |',
+      '| Bis zu wie vielen Punkten geht ein normaler Satz? | 15 | 21 | 25 | C |'
+    ].join('\n');
+    pruefeEingabe();
+  };
+
+  // ---------- Zufall ----------
+  function zufall(bis) {
+    var grenze = Math.floor(4294967296 / bis) * bis, z = new Uint32Array(1);
+    do { crypto.getRandomValues(z); } while (z[0] >= grenze);
+    return z[0] % bis;
+  }
+  function mische(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = zufall(i + 1), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+  // ---------- Turnier ----------
+  function neuesTurnier(teams, fragen, punkte) {
+    var n = teams.length, groesse = 2;
+    while (groesse < n) groesse *= 2;
+    var freilose = groesse - n, haelfte = groesse / 2, gelost = mische(teams.map(function (_, i) { return i; }));
+    var freiPos = {};
+    for (var k = 0; k < freilose; k++) freiPos[Math.floor(k * haelfte / freilose)] = true;
+    var runden = [], erste = [], z = 0;
+    for (var m = 0; m < haelfte; m++) {
+      if (freiPos[m]) erste.push({ a: gelost[z++], b: null, frei: true });
+      else { erste.push({ a: gelost[z++], b: gelost[z++] }); }
+    }
+    runden.push(erste);
+    for (var g = haelfte / 2; g >= 1; g /= 2) {
+      var r = []; for (var q = 0; q < g; q++) r.push({ a: null, b: null }); runden.push(r);
+    }
+    runden.forEach(function (rd) { rd.forEach(function (s) { s.sieger = null; s.pa = 0; s.pb = 0; }); });
+    S = { teams: teams, fragen: fragen, punkte: punkte, runden: runden, naechste: 0, beideFalsch: [], aktiv: null, frage: null, aufgeloest: false, meldung: '' };
+    runden[0].forEach(function (s, m) { if (s.frei) setzeSieger(0, m, s.a); });
+  }
+  function setzeSieger(r, m, team) {
+    var s = S.runden[r][m]; s.sieger = team;
+    if (r + 1 < S.runden.length) {
+      var ziel = S.runden[r + 1][Math.floor(m / 2)];
+      if (m % 2 === 0) ziel.a = team; else ziel.b = team;
+    }
+  }
+  function naechstesSpiel() {
+    for (var r = 0; r < S.runden.length; r++)
+      for (var m = 0; m < S.runden[r].length; m++) {
+        var s = S.runden[r][m];
+        if (s.sieger === null && s.a !== null && s.b !== null) return [r, m];
+      }
+    return null;
+  }
+  function turnierSieger() { var f = S.runden[S.runden.length - 1][0]; return f.sieger; }
+  function rundenName(r) {
+    var vonHinten = S.runden.length - 1 - r;
+    return ['Finale', 'Halbfinale', 'Viertelfinale', 'Achtelfinale'][vonHinten] || 'Runde ' + (r + 1);
+  }
+  function restFragen() { return S.fragen.length - S.naechste; }
+
+  function merke() { verlauf.push(JSON.stringify(S)); }
+  function zuruecknehmen() {
+    if (!verlauf.length) return;
+    S = JSON.parse(verlauf.pop());
+    zeige(S.aktiv ? 'duell' : (turnierSieger() !== null ? 'ende' : 'baum'));
+  }
+
+  // ---------- Anzeige ----------
+  var seiten = ['start', 'baum', 'duell', 'ende'];
+  function zeige(welche) {
+    seiten.forEach(function (s) { $('s-' + s).hidden = s !== welche; });
+    if (welche === 'baum') malBaum();
+    if (welche === 'duell') malDuell();
+    if (welche === 'ende') malEnde();
+    ['zurueck-baum', 'zurueck-duell', 'zurueck-ende'].forEach(function (id) { $(id).disabled = !verlauf.length; });
+    window.scrollTo(0, 0);
+  }
+  function vorrat(el) {
+    var rest = restFragen();
+    el.textContent = rest === 1 ? 'Noch 1 Frage' : 'Noch ' + rest + ' Fragen';
+    if (rest <= 3) el.textContent += rest ? ': die Fragen werden knapp.' : '.';
+    el.className = 'vorrat' + (rest <= 3 ? ' knapp' : '');
+  }
+  function name(i) { return i === null ? '' : S.teams[i]; }
+  function malBaum() {
+    var b = $('baum'); b.textContent = '';
+    var aktiv = naechstesSpiel();
+    S.runden.forEach(function (rd, r) {
+      var spalte = document.createElement('div'); spalte.className = 'runde';
+      var h = document.createElement('h2'); h.textContent = rundenName(r); spalte.appendChild(h);
+      rd.forEach(function (s, m) {
+        var k = document.createElement('div'); k.className = 'spiel' + (aktiv && aktiv[0] === r && aktiv[1] === m ? ' aktiv' : '');
+        [['a', 'pa'], ['b', 'pb']].forEach(function (seite) {
+          var z = document.createElement('div'), t = s[seite[0]], n = document.createElement('span'), p = document.createElement('span');
+          if (t === null) { n.textContent = s.frei && seite[0] === 'b' ? 'Freilos' : '…'; z.className = 'leer'; }
+          else { n.textContent = name(t); if (s.sieger !== null) z.className = s.sieger === t ? 'sieg' : 'raus'; }
+          if (t !== null && !s.frei && (s.pa || s.pb || s.sieger !== null)) p.textContent = s[seite[1]];
+          z.appendChild(n); z.appendChild(p); k.appendChild(z);
+        });
+        spalte.appendChild(k);
+      });
+      b.appendChild(spalte);
+    });
+    vorrat($('vorrat-baum'));
+    var sieger = turnierSieger();
+    $('weiter-duell').textContent = S.aktiv ? 'Zurück zum Duell' : sieger !== null ? 'Zur Siegerehrung' : 'Nächstes Duell';
+  }
+  function malDuell() {
+    var r = S.aktiv[0], m = S.aktiv[1], s = S.runden[r][m];
+    $('t-a').innerHTML = ''; $('t-b').innerHTML = '';
+    [['t-a', s.a, s.pa], ['t-b', s.b, s.pb]].forEach(function (x) {
+      var el = $(x[0]); el.appendChild(document.createTextNode(name(x[1])));
+      var p = document.createElement('span'); p.className = 'pkt'; p.textContent = x[2] + (S.punkte > 1 ? ' von ' + S.punkte : '') + (x[2] === 1 ? ' Punkt' : ' Punkte');
+      el.appendChild(p);
+    });
+    $('w-a').textContent = 'Punkt für ' + name(s.a);
+    $('w-b').textContent = 'Punkt für ' + name(s.b);
+    $('aus-a').textContent = 'Weiter: ' + name(s.a);
+    $('aus-b').textContent = 'Weiter: ' + name(s.b);
+    var fertig = s.sieger !== null;
+    $('ergebnis').hidden = !S.meldung; $('ergebnis').textContent = S.meldung;
+    $('naechste').hidden = !fertig;
+    $('naechste').textContent = turnierSieger() !== null ? 'Zur Siegerehrung' : 'Zum Turnierbaum';
+    var ohneFrage = S.frage === null && !fertig;
+    $('aus').hidden = !ohneFrage;
+    $('fragebereich').hidden = S.frage === null;
+    $('aufloesen-zeile').hidden = fertig || ohneFrage || S.aufgeloest;
+    $('wertung').hidden = fertig || ohneFrage || !S.aufgeloest;
+    if (S.frage !== null) {
+      var fr = S.fragen[S.frage];
+      $('frage').textContent = fr.f;
+      var box = $('antworten'); box.textContent = '';
+      fr.a.forEach(function (t, i) {
+        var d = document.createElement('div');
+        d.className = 'antwort' + (S.aufgeloest ? (i === fr.r ? ' richtig' : ' blass') : '');
+        var b = document.createElement('b'); b.textContent = 'ABC'[i]; d.appendChild(b);
+        d.appendChild(document.createTextNode(t)); box.appendChild(d);
+      });
+    }
+    vorrat($('vorrat-duell'));
+  }
+  function malEnde() {
+    $('sieger').textContent = name(turnierSieger());
+    var l = $('falsch'); l.textContent = '';
+    S.beideFalsch.forEach(function (i) {
+      var fr = S.fragen[i], li = document.createElement('li');
+      li.appendChild(document.createTextNode(fr.f + ' '));
+      var s = document.createElement('span'); s.className = 'loes'; s.textContent = 'Richtig: ' + 'ABC'[fr.r] + ', ' + fr.a[fr.r];
+      li.appendChild(s); l.appendChild(li);
+    });
+    $('falsch-titel').textContent = S.beideFalsch.length ? 'Hier lagen beide Teams falsch' : 'Keine Frage, bei der beide Teams falsch lagen';
+  }
+
+  // ---------- Ablauf ----------
+  function zieheFrage() {
+    if (S.naechste < S.fragen.length) { S.frage = S.naechste++; } else { S.frage = null; }
+    S.aufgeloest = false;
+  }
+  function starteDuell() {
+    var n = naechstesSpiel();
+    if (!n) { zeige('ende'); return; }
+    S.aktiv = n; S.meldung = ''; zieheFrage(); zeige('duell');
+  }
+  function werte(ergebnis) {
+    merke();
+    var s = S.runden[S.aktiv[0]][S.aktiv[1]];
+    if (ergebnis === 'a') s.pa++;
+    if (ergebnis === 'b') s.pb++;
+    if (ergebnis === 'keins') S.beideFalsch.push(S.frage);
+    var sieger = s.pa >= S.punkte ? s.a : s.pb >= S.punkte ? s.b : null;
+    if (sieger !== null) {
+      setzeSieger(S.aktiv[0], S.aktiv[1], sieger);
+      S.meldung = (turnierSieger() !== null ? 'Turniersieg: ' : 'Sieg im Duell: ') + name(sieger);
+      S.aufgeloest = true;
+      zeige('duell');
+      return;
+    }
+    S.meldung = ergebnis === 'beide' ? 'Beide richtig: nächste Frage.' : ergebnis === 'keins' ? 'Beide falsch: nächste Frage.' : 'Punkt für ' + name(ergebnis === 'a' ? s.a : s.b) + '.';
+    zieheFrage();
+    zeige('duell');
+  }
+  function entscheide(seite) {
+    merke();
+    var s = S.runden[S.aktiv[0]][S.aktiv[1]], t = seite === 'a' ? s.a : s.b;
+    setzeSieger(S.aktiv[0], S.aktiv[1], t);
+    S.meldung = (turnierSieger() !== null ? 'Turniersieg: ' : 'Weiter: ') + name(t);
+    zeige('duell');
+  }
+
+  $('los').onclick = function () {
+    var e = pruefeEingabe(); if ($('los').disabled) return;
+    verlauf = [];
+    neuesTurnier(teamsLesen(), e.fragen, +$('punkte').value);
+    zeige('baum');
+  };
+  $('weiter-duell').onclick = function () {
+    if (S.aktiv) zeige('duell'); else if (turnierSieger() !== null) zeige('ende'); else starteDuell();
+  };
+  $('aufloesen').onclick = function () { S.aufgeloest = true; S.meldung = ''; zeige('duell'); };
+  $('w-a').onclick = function () { werte('a'); };
+  $('w-b').onclick = function () { werte('b'); };
+  $('w-beide').onclick = function () { werte('beide'); };
+  $('w-keins').onclick = function () { werte('keins'); };
+  $('aus-a').onclick = function () { entscheide('a'); };
+  $('aus-b').onclick = function () { entscheide('b'); };
+  $('naechste').onclick = function () { S.aktiv = null; S.frage = null; S.meldung = ''; zeige(turnierSieger() !== null ? 'ende' : 'baum'); };
+  $('zum-baum').onclick = function () { zeige('baum'); };
+  ['zurueck-baum', 'zurueck-duell', 'zurueck-ende'].forEach(function (id) { $(id).onclick = zuruecknehmen; });
+  $('baum-ende').onclick = function () { zeige('baum'); };
+  $('neu').onclick = function () { S = null; verlauf = []; zeige('start'); pruefeEingabe(); };
+  $('abbruch').onclick = function () { S = null; verlauf = []; zeige('start'); pruefeEingabe(); };
+  $('voll').onclick = function () {
+    try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch (e) {}
+  };
+
+  pruefeEingabe();
+  window.__turnier = { zustand: function () { return S; }, liesFragen: liesFragen };   // für Tests
+})();
+</script>
+</body>
+</html>
