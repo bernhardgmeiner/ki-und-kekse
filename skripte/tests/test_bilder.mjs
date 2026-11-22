@@ -40,7 +40,7 @@ for (const breite of [390, 1280]) {
   await p.reload(); await p.click('#zumUeberblick');
   pruef(await p.isHidden('#summe') && (await p.$$eval('.kachel .marke', (l) => l.length)) === 0, 'frischer Überblick: nichts aufgedeckt');
   await p.click('.kachel:nth-child(3) .neben');
-  pruef((await p.$$eval('.kachel .marke', (l) => l.map((x) => x.textContent))).join() === 'Generiert', 'einzelne Kachel aufdecken');
+  pruef((await p.$$eval('.kachel .marke', (l) => l.map((x) => x.textContent))).join() === (B[2].ki ? 'Generiert' : 'Echt'), 'einzelne Kachel aufdecken');
   await p.click('#alleAuf');
   const marken = await p.$$eval('.kachel .marke', (l) => l.map((x) => x.textContent));
   pruef(marken.length === 12 && marken.filter((m) => m === 'Generiert').length === 6, 'alle aufgedeckt');
